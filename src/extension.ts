@@ -134,6 +134,23 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  // Command: quick refresh quota (for success state)
+  const quickRefreshQuotaCommand = vscode.commands.registerCommand(
+    'antigravity-quota-watcher.quickRefreshQuota',
+    async () => {
+      if (!quotaService) {
+        vscode.window.showWarningMessage('配额服务未初始化');
+        return;
+      }
+
+      console.log('用户触发快速刷新配额');
+      // 显示刷新中状态(旋转图标)
+      statusBarService?.showQuickRefreshing();
+      // 立即刷新一次,不中断轮询
+      await quotaService.quickRefresh();
+    }
+  );
+
   // Command: refresh quota
   const refreshQuotaCommand = vscode.commands.registerCommand(
     'antigravity-quota-watcher.refreshQuota',
@@ -261,6 +278,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // Add to context subscriptions
   context.subscriptions.push(
     showQuotaCommand,
+    quickRefreshQuotaCommand,
     refreshQuotaCommand,
     retryLoginCheckCommand,
     detectPortCommand,

@@ -11,6 +11,8 @@ export class StatusBarService {
   private criticalThreshold: number;
   private showPromptCredits: boolean;
   private displayStyle: 'percentage' | 'progressBar';
+  private lastSnapshot?: QuotaSnapshot;
+  private isQuickRefreshing: boolean = false;
 
   constructor(
     warningThreshold: number = 50,
@@ -30,8 +32,12 @@ export class StatusBarService {
   }
 
   updateDisplay(snapshot: QuotaSnapshot): void {
-    // 恢复默认命令
-    this.statusBarItem.command = 'antigravity-quota-watcher.showQuota';
+    // 保存最后的快照
+    this.lastSnapshot = snapshot;
+    // 清除刷新状态
+    this.isQuickRefreshing = false;
+    // 设置为快速刷新命令,允许用户点击立即刷新
+    this.statusBarItem.command = 'antigravity-quota-watcher.quickRefreshQuota';
 
     const parts: string[] = [];
 
@@ -115,7 +121,7 @@ export class StatusBarService {
   }
 
   private updateTooltip(snapshot: QuotaSnapshot): void {
-    const lines: string[] = ['Antigravity 模型配额信息', ''];
+    const lines: string[] = ['Antigravity 模型配额信息', '[点击状态栏可手动刷新配额]', ''];
 
     if (this.showPromptCredits && snapshot.promptCredits) {
       lines.push('💳 Prompt Credits');
@@ -231,6 +237,24 @@ export class StatusBarService {
     const empty = '░'.repeat(emptyCount);
 
     return `${filled}${empty}`;
+  }
+
+  /**
+   * 显示快速刷新状态 - 在当前配额显示前添加刷新图标
+   */
+  showQuickRefreshing(): void {
+    if (this.isQuickRefreshing) {
+      return; // 已经在刷新状态
+    }
+    this.isQuickRefreshing = true;
+
+    // 在当前文本前添加刷新图标
+    const currentText = this.statusBarItem.text;
+    if (!currentText.startsWith('$(sync~spin)')) {
+      this.statusBarItem.text = `$(sync~spin) ${currentText}`;
+    }
+    this.statusBarItem.tooltip = '正在刷新配额...\n\n' + (this.statusBarItem.tooltip || '');
+    this.statusBarItem.show();
   }
 
   showDetecting(): void {

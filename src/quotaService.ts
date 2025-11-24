@@ -122,6 +122,16 @@ export class QuotaService {
     }
   }
 
+  /**
+   * 立即刷新配额(保持轮询不中断)
+   * 用于用户手动触发快速刷新,不会重置错误状态
+   */
+  async quickRefresh(): Promise<void> {
+    console.log('立即刷新配额...');
+    // 直接调用内部获取方法,绕过 isRetrying 检查
+    await this.doFetchQuota();
+  }
+
   private async fetchQuota(): Promise<void> {
     // 如果正在重试中，跳过本次调用
     if (this.isRetrying) {
@@ -129,6 +139,14 @@ export class QuotaService {
       return;
     }
 
+    await this.doFetchQuota();
+  }
+
+  /**
+   * 实际执行配额获取的内部方法
+   * quickRefresh 和 fetchQuota 都调用此方法
+   */
+  private async doFetchQuota(): Promise<void> {
     console.log('开始获取配额信息...');
 
     // 通知状态: 正在获取 (仅首次)
