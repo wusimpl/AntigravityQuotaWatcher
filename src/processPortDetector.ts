@@ -45,7 +45,10 @@ export class ProcessPortDetector {
 
         // Fetch full command line for the language server process using platform-specific command
         const command = this.platformStrategy.getProcessListCommand(this.processName);
+        console.log(`[PortDetector] Running process list command: ${command}`);
         const { stdout } = await execAsync(command, { timeout: 5000 });
+        const preview = stdout.trim().split('\n').slice(0, 3).join('\n');
+        console.log(`[PortDetector] Process command output preview:\n${preview || '(empty)'}`);
 
         // Parse process info using platform-specific parser
         const processInfo = this.platformStrategy.parseProcessInfo(stdout);
@@ -84,12 +87,16 @@ export class ProcessPortDetector {
 
         console.log(`✅ Attempt ${attempt} succeeded!`);
         console.log(`✅ API port (HTTPS): ${connectPort}`);
+        console.log(`[PortDetector] Detection summary: extension_port=${extensionPort}, connect_port=${connectPort}`);
 
         return { extensionPort, connectPort, csrfToken };
 
       } catch (error: any) {
         const errorMsg = error?.message || String(error);
         console.error(`❌ Attempt ${attempt} failed:`, errorMsg);
+        if (error?.stack) {
+          console.error('   Stack:', error.stack);
+        }
 
         // 提供更具体的错误提示
         if (errorMsg.includes('timeout')) {
@@ -121,10 +128,13 @@ export class ProcessPortDetector {
   private async getProcessListeningPorts(pid: number): Promise<number[]> {
     try {
       const command = this.platformStrategy.getPortListCommand(pid);
+      console.log(`[PortDetector] Running port list command for PID ${pid}: ${command}`);
       const { stdout } = await execAsync(command, { timeout: 3000 });
+      console.log(`[PortDetector] Port list output preview:\n${stdout.trim().split('\n').slice(0, 5).join('\n') || '(empty)'}`);
 
       // Parse ports using platform-specific parser
       const ports = this.platformStrategy.parseListeningPorts(stdout);
+      console.log(`[PortDetector] Parsed listening ports: ${ports.length > 0 ? ports.join(', ') : '(none)'}`);
       return ports;
     } catch (error) {
       console.error('Failed to fetch listening ports:', error);
@@ -136,6 +146,7 @@ export class ProcessPortDetector {
    * 测试端口列表，找到第一个能响应 API 的端口
    */
   private async findWorkingPort(ports: number[], csrfToken: string): Promise<number | null> {
+    console.log(`[PortDetector] Candidate ports for testing: ${ports.join(', ') || '(none)'}`);
     for (const port of ports) {
       console.log(`  🔍 Testing port ${port}...`);
       const isWorking = await this.testPortConnectivity(port, csrfToken);
@@ -186,18 +197,21 @@ export class ProcessPortDetector {
         timeout: 2000
       };
 
+      console.log(`[PortDetector] Sending GetUnleashData probe to port ${port}`);
       const req = https.request(options, (res) => {
-        // 只要能连接并返回状态码，就认为是成功的
         const success = res.statusCode === 200;
-        res.resume(); // 消费响应数据
+        console.log(`[PortDetector] Port ${port} responded with status ${res.statusCode}`);
+        res.resume();
         resolve(success);
       });
 
-      req.on('error', () => {
+      req.on('error', (err) => {
+        console.warn(`[PortDetector] Port ${port} connectivity error: ${err.message}`);
         resolve(false);
       });
 
       req.on('timeout', () => {
+        console.warn(`[PortDetector] Port ${port} probe timed out`);
         req.destroy();
         resolve(false);
       });

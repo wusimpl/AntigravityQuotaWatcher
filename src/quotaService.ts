@@ -79,6 +79,7 @@ export class QuotaService {
   }
 
   startPolling(intervalMs: number): void {
+    console.log(`[QuotaService] Starting polling loop every ${intervalMs}ms`);
     this.stopPolling();
     this.fetchQuota();
     this.pollingInterval = setInterval(() => {
@@ -88,6 +89,7 @@ export class QuotaService {
 
   stopPolling(): void {
     if (this.pollingInterval) {
+      console.log('[QuotaService] Stopping polling loop');
       clearInterval(this.pollingInterval);
       this.pollingInterval = undefined;
     }
@@ -98,7 +100,7 @@ export class QuotaService {
    * 成功后会自动恢复轮询
    */
   async retryFromError(pollingInterval: number): Promise<void> {
-    console.log('Manual quota retry triggered; restarting full flow...');
+    console.log(`Manual quota retry triggered; restarting full flow (interval ${pollingInterval}ms)...`);
     // 重置所有错误计数和状态
     this.consecutiveErrors = 0;
     this.retryCount = 0;
@@ -147,7 +149,7 @@ export class QuotaService {
    * quickRefresh 和 fetchQuota 都调用此方法
    */
   private async doFetchQuota(): Promise<void> {
-    console.log('Starting quota fetch...');
+    console.log(`Starting quota fetch with method ${this.apiMethod} (firstAttempt=${this.isFirstAttempt})...`);
 
     // 通知状态: 正在获取 (仅首次)
     if (this.statusCallback && this.isFirstAttempt) {
@@ -204,6 +206,10 @@ export class QuotaService {
       this.retryCount = 0;
       this.isFirstAttempt = false;
 
+      const modelCount = snapshot.models?.length ?? 0;
+      const hasPromptCredits = Boolean(snapshot.promptCredits);
+      console.log(`[QuotaService] Snapshot ready: models=${modelCount}, promptCredits=${hasPromptCredits}`);
+
       if (this.updateCallback) {
         this.updateCallback(snapshot);
       } else {
@@ -212,6 +218,9 @@ export class QuotaService {
     } catch (error: any) {
       this.consecutiveErrors++;
       console.error(`Quota fetch failed (attempt ${this.consecutiveErrors}):`, error.message);
+      if (error?.stack) {
+        console.error('Stack:', error.stack);
+      }
 
       // 如果还没达到最大重试次数，进行延迟重试
       if (this.retryCount < this.MAX_RETRY_COUNT) {

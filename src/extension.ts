@@ -23,6 +23,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // Init services
   configService = new ConfigService();
   let config = configService.getConfig();
+  console.log('[Extension] Loaded config:', config);
 
   portDetectionService = new PortDetectionService(context);
 
@@ -42,14 +43,19 @@ export async function activate(context: vscode.ExtensionContext) {
   let detectionResult: PortDetectionResult | null = null;
 
   try {
+    console.log('[Extension] Starting initial port detection run');
     const result = await portDetectionService.detectPort();
     if (result) {
       detectionResult = result;
       detectedPort = result.port;
       detectedCsrfToken = result.csrfToken;
+      console.log('[Extension] Initial port detection success:', detectionResult);
     }
   } catch (error) {
     console.error('Port/CSRF detection failed', error);
+    if (error instanceof Error && error.stack) {
+      console.error('Stack:', error.stack);
+    }
   }
 
   // Ensure port and CSRF token are available
@@ -138,6 +144,7 @@ export async function activate(context: vscode.ExtensionContext) {
   const quickRefreshQuotaCommand = vscode.commands.registerCommand(
     'antigravity-quota-watcher.quickRefreshQuota',
     async () => {
+      console.log('[Extension] quickRefreshQuota command invoked');
       if (!quotaService) {
         vscode.window.showWarningMessage('Quota service is not initialized');
         return;
@@ -155,6 +162,7 @@ export async function activate(context: vscode.ExtensionContext) {
   const refreshQuotaCommand = vscode.commands.registerCommand(
     'antigravity-quota-watcher.refreshQuota',
     async () => {
+      console.log('[Extension] refreshQuota command invoked');
       if (!quotaService) {
         vscode.window.showWarningMessage('Quota service is not initialized');
         return;
@@ -182,6 +190,7 @@ export async function activate(context: vscode.ExtensionContext) {
   const retryLoginCheckCommand = vscode.commands.registerCommand(
     'antigravity-quota-watcher.retryLoginCheck',
     async () => {
+      console.log('[Extension] retryLoginCheck command invoked');
       if (!quotaService) {
         vscode.window.showWarningMessage('Quota service is not initialized, please detect the port first');
         return;
@@ -206,6 +215,7 @@ export async function activate(context: vscode.ExtensionContext) {
   const detectPortCommand = vscode.commands.registerCommand(
     'antigravity-quota-watcher.detectPort',
     async () => {
+      console.log('[Extension] detectPort command invoked');
       vscode.window.showInformationMessage('🔍 Detecting port again...');
 
       config = configService!.getConfig();
@@ -215,9 +225,11 @@ export async function activate(context: vscode.ExtensionContext) {
       statusBarService?.setDisplayStyle(config.displayStyle);
 
       try {
+        console.log('[Extension] detectPort: invoking portDetectionService');
         const result = await portDetectionService?.detectPort();
 
         if (result && result.port && result.csrfToken) {
+          console.log('[Extension] detectPort command succeeded:', result);
           // 如果之前没有 quotaService,需要初始化
           if (!quotaService) {
             quotaService = new QuotaService(result.port, result.csrfToken, result.httpPort);
@@ -237,12 +249,15 @@ export async function activate(context: vscode.ExtensionContext) {
               if (!isLoggedIn) {
                 console.log('User is not logged in to Antigravity');
                 statusBarService?.showNotLoggedIn();
+              } else {
+                console.log('User login state confirmed for Antigravity');
               }
             });
           } else {
             // 更新现有服务的端口
             quotaService.setPorts(result.connectPort, result.httpPort);
             quotaService.setAuthInfo(undefined, result.csrfToken);
+            console.log('[Extension] detectPort: updated existing QuotaService ports');
           }
 
           // 清除之前的错误状态
@@ -256,6 +271,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
           vscode.window.showInformationMessage(`✅ Detection successful! Port: ${result.port}`);
         } else {
+          console.warn('[Extension] detectPort command did not return valid ports');
           vscode.window.showErrorMessage(
             '❌ Unable to detect a valid port. Please ensure:\n' +
             '1. Your Google account is signed in\n' +
@@ -265,6 +281,9 @@ export async function activate(context: vscode.ExtensionContext) {
       } catch (error: any) {
         const errorMsg = error?.message || String(error);
         console.error('Port detection failed:', errorMsg);
+        if (error?.stack) {
+          console.error('Stack:', error.stack);
+        }
         vscode.window.showErrorMessage(`❌ Port detection failed: ${errorMsg}`);
       }
     }
