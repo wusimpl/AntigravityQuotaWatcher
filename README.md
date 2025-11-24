@@ -1,5 +1,18 @@
 # Antigravity Quota Watcher
 
+> **⚠️ 免责声明 / Disclaimer**
+>
+> 本插件为非官方工具，与 Antigravity 或 Codeium 没有任何关联。
+> 本插件依赖于本地语言服务的内部实现细节，相关机制可能会随时变动。使用风险自负。
+>
+> This extension is an unofficial tool and is NOT affiliated with, endorsed by, or connected to Antigravity or Codeium.
+> It relies on the internal implementation details of the local language server, which may change at any time. Use at your own risk.
+
+> **💻 系统要求 / System Requirements**
+>
+> 本插件目前 **仅支持 Windows 操作系统**。
+> This extension currently supports **Windows ONLY**.
+
 一个用于实时监控 Antigravity AI 模型使用配额的 VS Code 插件。
 
 ## ✨ 功能特点
@@ -23,11 +36,11 @@
 
 ### 警告阈值
 - **默认值**：`50`（百分比）
-- **说明**：配额低于此百分比时状态栏显示橙色警告
+- **说明**：配额低于此百分比时状态栏显示警告色（通常为黄色或橙色）
 
 ### 临界阈值
 - **默认值**：`30`（百分比）
-- **说明**：配额低于此百分比时状态栏显示红色警告
+- **说明**：配额低于此百分比时状态栏显示错误色（通常为红色）
 
 ### API 方法选择
 - **说明**：
@@ -48,21 +61,20 @@
 
 ## 🎯 状态栏说明
 
-状态栏显示格式：`🚀 模型名称 X/Y (Z%)`
+状态栏显示格式：`🟢 💎 Pro-L ████████ | 🔴 🤖 Claude ██░░░░░░`
 
-- **X**：已使用配额
-- **Y**：总配额
-- **Z%**：剩余百分比
+每个模型前会显示状态指示符号和进度条：
 
-### 三级颜色预警系统
+### 状态指示符号
 
-状态栏背景色会根据剩余配额自动变化：
+每个模型前的圆点符号表示当前配额状态：
 
 - **🟢 绿色**：剩余配额 ≥ 50%（充足）
-- **🟠 橙色**：剩余配额 30%-50%（中等）
+- **🟡 黄色**：剩余配额 30%-50%（中等）
 - **🔴 红色**：剩余配额 < 30%（不足）
+- **⚫ 黑色**：配额已耗尽（0%）
 
-您可以在设置中自定义 `warningThreshold`（橙色阈值）和 `criticalThreshold`（红色阈值）来调整预警级别。
+您可以在设置中自定义 `warningThreshold`（警告阈值）和 `criticalThreshold`（临界阈值）来调整状态符号的显示级别。
 
 ## 📝 注意事项
 

@@ -34,7 +34,8 @@ export class StatusBarService {
 
     if (this.showPromptCredits && snapshot.promptCredits) {
       const { available, monthly, remainingPercentage } = snapshot.promptCredits;
-      const creditsPart = `💳 ${available}/${this.formatNumber(monthly)} (${remainingPercentage.toFixed(0)}%)`;
+      const indicator = this.getStatusIndicator(remainingPercentage);
+      const creditsPart = `${indicator} 💳 ${available}/${this.formatNumber(monthly)} (${remainingPercentage.toFixed(0)}%)`;
       parts.push(creditsPart);
     }
 
@@ -43,18 +44,19 @@ export class StatusBarService {
     for (const model of modelsToShow) {
       const emoji = this.getModelEmoji(model.label);
       const shortName = this.getShortModelName(model.label);
+      const indicator = this.getStatusIndicator(model.remainingPercentage ?? 0);
 
       if (model.isExhausted) {
         if (this.displayStyle === 'progressBar') {
-          parts.push(`${emoji} ${shortName} ${this.getProgressBar(0)}`);
+          parts.push(`${indicator} ${emoji} ${shortName} ${this.getProgressBar(0)}`);
         } else {
-          parts.push(`${emoji} ${shortName}: 0%`);
+          parts.push(`${indicator} ${emoji} ${shortName}: 0%`);
         }
       } else if (model.remainingPercentage !== undefined) {
         if (this.displayStyle === 'progressBar') {
-          parts.push(`${emoji} ${shortName} ${this.getProgressBar(model.remainingPercentage)}`);
+          parts.push(`${indicator} ${emoji} ${shortName} ${this.getProgressBar(model.remainingPercentage)}`);
         } else {
-          parts.push(`${emoji} ${shortName}: ${model.remainingPercentage.toFixed(0)}%`);
+          parts.push(`${indicator} ${emoji} ${shortName}: ${model.remainingPercentage.toFixed(0)}%`);
         }
       }
     }
@@ -66,57 +68,31 @@ export class StatusBarService {
     } else {
       const displayText = parts.join(' | ');
       this.statusBarItem.text = displayText;
-      this.updateColor(snapshot);
+      // 移除背景色变化，保持默认
+      this.statusBarItem.backgroundColor = undefined;
+      this.statusBarItem.color = undefined;
       this.updateTooltip(snapshot);
     }
 
     this.statusBarItem.show();
   }
 
-  private updateColor(snapshot: QuotaSnapshot): void {
-    const level = this.getQuotaLevel(snapshot);
-
-    switch (level) {
-      case QuotaLevel.Normal:
-        // 绿色：额度充足（≥50%）
-        this.statusBarItem.backgroundColor = new vscode.ThemeColor('charts.green');
-        break;
-      case QuotaLevel.Warning:
-        // 橙色：额度中等（30%-50%）
-        this.statusBarItem.backgroundColor = new vscode.ThemeColor('charts.orange');
-        break;
-      case QuotaLevel.Critical:
-      case QuotaLevel.Depleted:
-        // 红色：额度不足（<30%）或已耗尽
-        this.statusBarItem.backgroundColor = new vscode.ThemeColor('charts.red');
-        break;
+  /**
+   * 根据剩余百分比返回状态指示符号
+   * 🟢 > warningThreshold (默认50%)
+   * 🟡 criticalThreshold < percentage <= warningThreshold (默认30%-50%)
+   * 🔴 0 < percentage <= criticalThreshold (默认<30%)
+   * ⚫ percentage <= 0
+   */
+  private getStatusIndicator(percentage: number): string {
+    if (percentage <= 0) {
+      return '⚫'; // Depleted
+    } else if (percentage <= this.criticalThreshold) {
+      return '🔴'; // Critical
+    } else if (percentage <= this.warningThreshold) {
+      return '🟡'; // Warning
     }
-  }
-
-  private getQuotaLevel(snapshot: QuotaSnapshot): QuotaLevel {
-    const creditsPercent = this.showPromptCredits
-      ? snapshot.promptCredits?.remainingPercentage ?? 100
-      : 100;
-
-    const modelPercentages = snapshot.models
-      .map(m => m.remainingPercentage ?? 0);
-
-    const minPercentage = Math.min(creditsPercent, ...modelPercentages);
-
-    // 三级阈值系统
-    // Normal: > warningThreshold (默认50%)
-    // Warning: criticalThreshold < percentage <= warningThreshold (默认30%-50%)
-    // Critical: 0 < percentage <= criticalThreshold (默认<30%)
-    // Depleted: percentage <= 0
-
-    if (minPercentage <= 0) {
-      return QuotaLevel.Depleted;
-    } else if (minPercentage <= this.criticalThreshold) {
-      return QuotaLevel.Critical;
-    } else if (minPercentage <= this.warningThreshold) {
-      return QuotaLevel.Warning;
-    }
-    return QuotaLevel.Normal;
+    return '🟢'; // Normal
   }
 
   setWarningThreshold(threshold: number): void {
@@ -136,7 +112,7 @@ export class StatusBarService {
   }
 
   private updateTooltip(snapshot: QuotaSnapshot): void {
-    const lines: string[] = ['Antigravity Quota Status', ''];
+    const lines: string[] = ['Antigravity 模型配额用量', ''];
 
     if (this.showPromptCredits && snapshot.promptCredits) {
       lines.push('💳 Prompt Credits');
@@ -152,10 +128,10 @@ export class StatusBarService {
       if (model.isExhausted) {
         lines.push('  ⚠️ Quota depleted');
       } else if (model.remainingPercentage !== undefined) {
-        lines.push(`  Remaining: ${model.remainingPercentage.toFixed(1)}%`);
+        lines.push(`  剩余: ${model.remainingPercentage.toFixed(1)}%`);
       }
 
-      lines.push(`  Reset in ${model.timeUntilResetFormatted}`);
+      lines.push(`  重置时间： ${model.timeUntilResetFormatted}`);
       lines.push('');
     }
 
@@ -204,18 +180,18 @@ export class StatusBarService {
 
   private getModelEmoji(label: string): string {
     if (label.includes('Claude')) {
-      return '🤖';
+      return '';
     }
     if (label.includes('Gemini') && label.includes('Flash')) {
-      return '⚡';
+      return '';
     }
     if (label.includes('Gemini') && label.includes('Pro')) {
-      return '💎';
+      return '';
     }
     if (label.includes('GPT')) {
-      return '🔮';
+      return '';
     }
-    return '📊';
+    return '';
   }
 
   private getShortModelName(label: string): string {
