@@ -3,6 +3,7 @@
  * Provides platform-specific implementations for process detection.
  */
 
+import * as vscode from 'vscode';
 import { WindowsProcessDetector } from './windowsProcessDetector';
 import { UnixProcessDetector } from './unixProcessDetector';
 
@@ -84,7 +85,18 @@ export class PlatformDetector {
     getStrategy(): IPlatformStrategy {
         switch (this.platform) {
             case 'win32':
-                return new WindowsProcessDetector();
+                const windowsDetector = new WindowsProcessDetector();
+
+                // 读取用户配置，检查是否强制使用 PowerShell 模式
+                const config = vscode.workspace.getConfiguration('antigravityQuotaWatcher');
+                const forcePowerShell = config.get<boolean>('forcePowerShell', false);
+
+                if (forcePowerShell) {
+                    console.log('🔧 Configuration: forcePowerShell is enabled, using PowerShell mode');
+                    windowsDetector.setUsePowerShell(true);
+                }
+
+                return windowsDetector;
             case 'darwin':
             case 'linux':
                 return new UnixProcessDetector(this.platform);

@@ -54,8 +54,8 @@
 
 ### API 方法选择
 - **说明**：
-  - `GET_USER_STATUS`：获取完整配额信息
-  - `COMMAND_MODEL_CONFIG`：兼容模式，适用于部分环境
+  - `GET_USER_STATUS`：获取完整配额信息（默认方法）
+  - `COMMAND_MODEL_CONFIG`：兼容模式，信息量较少
 
 ### PowerShell 模式（仅 Windows 系统）
 - **默认值**：`false`

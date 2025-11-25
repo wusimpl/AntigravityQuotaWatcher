@@ -39,6 +39,13 @@ export class ProcessPortDetector {
     const platformName = this.platformDetector.getPlatformName();
     const errorMessages = this.platformStrategy.getErrorMessages();
 
+    // 在 Windows 平台显示当前使用的检测模式
+    if (platformName === 'Windows') {
+      const windowsStrategy = this.platformStrategy as any;
+      const mode = windowsStrategy.isUsingPowerShell?.() ? 'PowerShell' : 'WMIC';
+      console.log(`🔧 Windows detection mode: ${mode}`);
+    }
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         console.log(`🔍 Attempting to detect Antigravity process (${platformName}, try ${attempt}/${maxRetries})...`);
