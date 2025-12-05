@@ -17,7 +17,7 @@
 
 ## 使用方法
 
-[下载插件](https://github.com/wusimpl/AntigravityQuotaWatcher/releases/tag/V0.7.0)，然后安装插件，重启 Antigravity
+[下载插件](https://github.com/wusimpl/AntigravityQuotaWatcher/releases/latest)，然后安装插件，重启 Antigravity
 
 ![Installation](https://raw.githubusercontent.com/wusimpl/AntigravityQuotaWatcher/main/images/install.png)
 
