@@ -75,7 +75,7 @@ export class StatusBarService {
       this.statusBarItem.backgroundColor = undefined;
       this.statusBarItem.tooltip = 'Cannot connect to Antigravity Language Server';
     } else {
-      const displayText = parts.join(' | ');
+      const displayText = parts.join('  ');
       this.statusBarItem.text = displayText;
       // 移除背景色变化，保持默认
       this.statusBarItem.backgroundColor = undefined;
