@@ -2,7 +2,7 @@
   "name": "antigravity-quota-watcher",
   "displayName": "Antigravity Quota Watcher",
   "description": "实时监控 Antigravity的模型使用配额",
-  "version": "0.7.4",
+  "version": "0.8.1",
   "publisher": "antigravity-tools",
   "icon": "icon.png",
   "engines": {
@@ -19,15 +19,15 @@
     "commands": [
       {
         "command": "antigravity-quota-watcher.showQuota",
-        "title": "Antigravity: 显示配额详情"
+        "title": "%command.showQuota%"
       },
       {
         "command": "antigravity-quota-watcher.refreshQuota",
-        "title": "Antigravity: 刷新配额"
+        "title": "%command.refreshQuota%"
       },
       {
         "command": "antigravity-quota-watcher.detectPort",
-        "title": "Antigravity: 重新检测端口"
+        "title": "%command.detectPort%"
       }
     ],
     "configuration": {
@@ -36,13 +36,13 @@
         "antigravityQuotaWatcher.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "启用自动监控",
+          "description": "%config.enabled%",
           "order": 10
         },
         "antigravityQuotaWatcher.pollingInterval": {
           "type": "number",
           "default": 60,
-          "description": "轮询间隔（秒）",
+          "description": "%config.pollingInterval%",
           "order": 20
         },
         "antigravityQuotaWatcher.displayStyle": {
@@ -53,10 +53,10 @@
             "progressBar"
           ],
           "enumDescriptions": [
-            "显示百分比 (例如: 🤖 Claude: 85%)",
-            "显示进度条 (例如: 🤖 Claude ███████░)"
+            "Show percentage / 显示百分比 (e.g. 🤖 Claude: 85%)",
+            "Show progress bar / 显示进度条 (e.g. 🤖 Claude ███████░)"
           ],
-          "description": "状态栏显示样式",
+          "description": "%config.displayStyle%",
           "order": 30
         },
         "antigravityQuotaWatcher.apiMethod": {
@@ -66,19 +66,19 @@
             "GET_USER_STATUS",
             "COMMAND_MODEL_CONFIG"
           ],
-          "description": "API 调用方式: GET_USER_STATUS (获取完整配额) 或 COMMAND_MODEL_CONFIG (兼容模式)",
+          "description": "%config.apiMethod%",
           "order": 40
         },
         "antigravityQuotaWatcher.warningThreshold": {
           "type": "number",
           "default": 50,
-          "description": "警告阈值 (%)",
+          "description": "%config.warningThreshold%",
           "order": 50
         },
         "antigravityQuotaWatcher.criticalThreshold": {
           "type": "number",
           "default": 30,
-          "description": "临界阈值 (%)",
+          "description": "%config.criticalThreshold%",
           "order": 60
         },
         "antigravityQuotaWatcher.showPromptCredits": {
@@ -92,6 +92,22 @@
           "default": true,
           "description": "使用 PowerShell 模式检测进程【仅 Windows系统可用，插件重启生效】",
           "order": 75
+        },
+        "antigravityQuotaWatcher.language": {
+          "type": "string",
+          "default": "auto",
+          "enum": [
+            "auto",
+            "en",
+            "zh-cn"
+          ],
+          "enumDescriptions": [
+            "Auto (Based on VS Code language) / 自动 (跟随 VS Code 语言)",
+            "English",
+            "Chinese (Simplified) / 简体中文"
+          ],
+          "description": "%config.language%",
+          "order": 80
         }
       }
     }
@@ -102,7 +118,8 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "package": "npx vsce package"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",
