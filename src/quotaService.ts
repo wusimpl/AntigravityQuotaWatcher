@@ -381,7 +381,8 @@ export class QuotaService {
     return {
       timestamp: new Date(),
       promptCredits: undefined,
-      models
+      models,
+      planName: undefined // CommandModelConfig API doesn't usually return plan info
     };
   }
 
@@ -414,10 +415,13 @@ export class QuotaService {
       .filter(config => config.quotaInfo)
       .map(config => this.parseModelQuota(config));
 
+    const planName = planStatus?.planInfo?.planName;
+
     return {
       timestamp: new Date(),
       promptCredits,
-      models
+      models,
+      planName
     };
   }
 

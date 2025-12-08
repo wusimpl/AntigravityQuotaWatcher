@@ -1,0 +1,12 @@
+{
+    "command.showQuota": "Antigravity: Show Quota Details",
+    "command.refreshQuota": "Antigravity: Refresh Quota",
+    "command.detectPort": "Antigravity: Re-detect Port",
+    "config.enabled": "Enable auto monitoring",
+    "config.pollingInterval": "Polling interval (seconds)",
+    "config.displayStyle": "Status bar display style",
+    "config.apiMethod": "API Method: GET_USER_STATUS (Full) or COMMAND_MODEL_CONFIG (Lite)",
+    "config.warningThreshold": "Warning threshold (%)",
+    "config.criticalThreshold": "Critical threshold (%)",
+    "config.language": "Language / 语言"
+}

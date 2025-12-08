@@ -8,6 +8,7 @@ import { StatusBarService } from './statusBar';
 import { ConfigService } from './configService';
 import { PortDetectionService, PortDetectionResult } from './portDetectionService';
 import { Config, QuotaSnapshot } from './types';
+import { LocalizationService } from './i18n/localizationService';
 
 let quotaService: QuotaService | undefined;
 let statusBarService: StatusBarService | undefined;
@@ -24,6 +25,11 @@ export async function activate(context: vscode.ExtensionContext) {
   // Init services
   configService = new ConfigService();
   let config = configService.getConfig();
+
+  // Initialize localization
+  const localizationService = LocalizationService.getInstance();
+  localizationService.setLanguage(config.language);
+
   // console.log('[Extension] Loaded config:', config);
 
   portDetectionService = new PortDetectionService(context);
@@ -314,6 +320,14 @@ function handleConfigChange(config: Config): void {
     statusBarService?.setCriticalThreshold(config.criticalThreshold);
     statusBarService?.setShowPromptCredits(config.showPromptCredits);
     statusBarService?.setDisplayStyle(config.displayStyle);
+
+    // Update language
+    const localizationService = LocalizationService.getInstance();
+    if (localizationService.getLanguage() !== config.language) {
+      localizationService.setLanguage(config.language);
+      // Refresh display to reflect language change
+      quotaService?.quickRefresh();
+    }
 
     if (config.enabled) {
       quotaService?.startPolling(config.pollingInterval);

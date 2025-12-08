@@ -58,6 +58,7 @@ export interface QuotaSnapshot {
   timestamp: Date;
   promptCredits?: PromptCreditsInfo;
   models: ModelQuotaInfo[];
+  planName?: string;
 }
 
 export enum QuotaLevel {
@@ -77,4 +78,5 @@ export interface Config {
   apiMethod: ApiMethodPreference;
   showPromptCredits: boolean;
   displayStyle: 'percentage' | 'progressBar';
+  language: 'auto' | 'en' | 'zh-cn';
 }

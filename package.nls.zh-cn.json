@@ -1,0 +1,12 @@
+{
+    "command.showQuota": "Antigravity: 显示配额详情",
+    "command.refreshQuota": "Antigravity: 刷新配额",
+    "command.detectPort": "Antigravity: 重新检测端口",
+    "config.enabled": "启用自动监控",
+    "config.pollingInterval": "轮询间隔（秒）",
+    "config.displayStyle": "状态栏显示样式",
+    "config.apiMethod": "API 调用方式: GET_USER_STATUS (获取完整配额) 或 COMMAND_MODEL_CONFIG (兼容模式)",
+    "config.warningThreshold": "警告阈值 (%)",
+    "config.criticalThreshold": "临界阈值 (%)",
+    "config.language": "Language / 语言"
+}
