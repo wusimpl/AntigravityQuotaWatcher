@@ -1,5 +1,7 @@
 # Antigravity Quota Watcher
 
+[English Version](./README.en.md) | 简体中文
+
 >
 > 本插件为非官方工具，与 Antigravity 没有任何关联。
 > 本插件依赖于 Antigravity 语言服务器的内部实现细节，相关机制可能会随时变动。
