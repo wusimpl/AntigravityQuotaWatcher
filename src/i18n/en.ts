@@ -24,6 +24,13 @@ export const en: TranslationMap = {
     'tooltip.clickToRetry': 'Click to retry',
     'tooltip.clickToRecheck': 'Click to recheck login status',
 
+    // Usage Pace tracking
+    'tooltip.usagePace': 'Usage Pace',
+    'usagePace.ahead': '✅Ahead',
+    'usagePace.onTrack': '✅OK',
+    'usagePace.behind': '⚠️Behind',
+    'usagePace.critical': '🚨Falling behind!',
+
     // Messages
     'msg.portDetectionFailed': 'Antigravity Quota Watcher: Failed to detect port. Please ensure Antigravity is running.',
     'msg.portDetectionSuccess': 'Antigravity Quota Watcher: Port detected successfully.',

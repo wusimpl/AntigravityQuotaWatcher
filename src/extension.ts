@@ -40,7 +40,8 @@ export async function activate(context: vscode.ExtensionContext) {
     config.criticalThreshold,
     config.showPromptCredits,
     config.showPlanName,
-    config.displayStyle
+    config.displayStyle,
+    config.showUsagePaceTracking
   );
   // 显示检测状态
   statusBarService.showDetecting();
@@ -95,6 +96,12 @@ export async function activate(context: vscode.ExtensionContext) {
     quotaService.setApiMethod(config.apiMethod === 'COMMAND_MODEL_CONFIG'
       ? QuotaApiMethod.COMMAND_MODEL_CONFIG
       : QuotaApiMethod.GET_USER_STATUS);
+    // Set usage pace tracking config
+    quotaService.setUsagePaceConfig(
+      config.quotaCycleDuration,
+      config.usagePaceWarningGap,
+      config.usagePaceCriticalGap
+    );
 
     // Register quota update callback
     quotaService.onQuotaUpdate((snapshot: QuotaSnapshot) => {
@@ -324,6 +331,13 @@ function handleConfigChange(config: Config): void {
     statusBarService?.setShowPromptCredits(config.showPromptCredits);
     statusBarService?.setShowPlanName(config.showPlanName);
     statusBarService?.setDisplayStyle(config.displayStyle);
+    statusBarService?.setShowUsagePaceTracking(config.showUsagePaceTracking);
+    // Update usage pace config in quota service
+    quotaService?.setUsagePaceConfig(
+      config.quotaCycleDuration,
+      config.usagePaceWarningGap,
+      config.usagePaceCriticalGap
+    );
 
     // Update language
     const localizationService = LocalizationService.getInstance();

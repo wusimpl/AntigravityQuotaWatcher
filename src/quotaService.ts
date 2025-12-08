@@ -1,6 +1,6 @@
 import * as https from "https";
 import * as http from "http";
-import { UserStatusResponse, QuotaSnapshot, PromptCreditsInfo, ModelQuotaInfo, ModelConfig } from "./types";
+import { UserStatusResponse, QuotaSnapshot, PromptCreditsInfo, ModelQuotaInfo, ModelConfig, PaceStatus } from "./types";
 
 // API 方法枚举
 export enum QuotaApiMethod {
@@ -110,6 +110,11 @@ export class QuotaService {
   private csrfToken?: string;
   private apiMethod: QuotaApiMethod = QuotaApiMethod.GET_USER_STATUS;
 
+  // Usage Pace tracking configuration
+  private quotaCycleDurationMs: number = 300 * 60 * 1000; // Default 5 hours in ms
+  private usagePaceWarningGap: number = 10;  // Behind by 10%
+  private usagePaceCriticalGap: number = 30; // Behind by 30%
+
   constructor(port: number, csrfToken?: string, httpPort?: number) {
     this.port = port;
     this.httpPort = httpPort ?? port;
@@ -137,6 +142,19 @@ export class QuotaService {
     this.httpPort = httpPort ?? connectPort;
     this.consecutiveErrors = 0;
     this.retryCount = 0;
+  }
+
+  /**
+   * Set usage pace tracking configuration
+   * @param cycleDurationMinutes Quota cycle duration in minutes (default 300 = 5 hours)
+   * @param warningGap Warning threshold - behind by this percentage (default 10)
+   * @param criticalGap Critical threshold - behind by this percentage (default 30)
+   */
+  setUsagePaceConfig(cycleDurationMinutes: number, warningGap: number, criticalGap: number): void {
+    this.quotaCycleDurationMs = cycleDurationMinutes * 60 * 1000;
+    this.usagePaceWarningGap = warningGap;
+    this.usagePaceCriticalGap = criticalGap;
+    console.log(`[QuotaService] Usage pace config updated: cycle=${cycleDurationMinutes}min, warning=${warningGap}%, critical=${criticalGap}%`);
   }
 
   onQuotaUpdate(callback: (snapshot: QuotaSnapshot) => void): void {
@@ -429,7 +447,34 @@ export class QuotaService {
     const quotaInfo = config.quotaInfo;
     const remainingFraction = quotaInfo?.remainingFraction;
     const resetTime = new Date(quotaInfo.resetTime);
-    const timeUntilReset = resetTime.getTime() - Date.now();
+    const now = Date.now();
+    const timeUntilReset = resetTime.getTime() - now;
+
+    // Calculate usage pace tracking
+    const usedFraction = 1 - (remainingFraction ?? 0);
+    const usedPercentage = usedFraction * 100;
+
+    // Calculate time elapsed in current cycle
+    // cycleStartTime = resetTime - cycleDuration
+    const cycleStartTime = resetTime.getTime() - this.quotaCycleDurationMs;
+    const elapsedTime = now - cycleStartTime;
+    const elapsedFraction = Math.min(1, Math.max(0, elapsedTime / this.quotaCycleDurationMs));
+    const idealUsedPercentage = elapsedFraction * 100;
+
+    // Calculate usage pace gap (positive = behind, negative = ahead)
+    const usagePaceGap = idealUsedPercentage - usedPercentage;
+
+    // Determine pace status
+    let paceStatus: PaceStatus;
+    if (usagePaceGap >= this.usagePaceCriticalGap) {
+      paceStatus = 'critical';
+    } else if (usagePaceGap >= this.usagePaceWarningGap) {
+      paceStatus = 'behind';
+    } else if (usagePaceGap > -5) {
+      paceStatus = 'onTrack';
+    } else {
+      paceStatus = 'ahead';
+    }
 
     return {
       label: config.label,
@@ -439,7 +484,12 @@ export class QuotaService {
       isExhausted: remainingFraction === undefined || remainingFraction === 0,
       resetTime,
       timeUntilReset,
-      timeUntilResetFormatted: this.formatTimeUntilReset(timeUntilReset)
+      timeUntilResetFormatted: this.formatTimeUntilReset(timeUntilReset),
+      // Usage Pace tracking fields
+      usedPercentage,
+      idealUsedPercentage,
+      usagePaceGap,
+      paceStatus
     };
   }
 

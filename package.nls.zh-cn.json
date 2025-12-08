@@ -11,5 +11,9 @@
     "config.showPlanName": "在状态栏显示套餐级别（官方暂未启用此字段）",
     "config.showPromptCredits": "显示 Prompt Credits（官方暂未启用此字段）",
     "config.forcePowerShell": "使用 PowerShell 模式检测进程【仅 Windows 系统可用，插件重启生效】",
-    "config.language": "Language / 语言"
+    "config.language": "Language / 语言",
+    "config.quotaCycleDuration": "配额重置周期时长（分钟，默认 300 = 5 小时）",
+    "config.showUsagePaceTracking": "显示使用节奏追踪（对比实际消费进度与理想进度）",
+    "config.usagePaceWarningGap": "使用节奏警告阈值：落后此百分比时提醒",
+    "config.usagePaceCriticalGap": "使用节奏严重警告阈值：落后此百分比时紧急提醒"
 }

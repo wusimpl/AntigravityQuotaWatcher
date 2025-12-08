@@ -3,7 +3,7 @@
  */
 
 import * as vscode from 'vscode';
-import { ModelQuotaInfo, QuotaLevel, QuotaSnapshot } from './types';
+import { ModelQuotaInfo, QuotaLevel, QuotaSnapshot, PaceStatus } from './types';
 import { LocalizationService } from './i18n/localizationService';
 
 export class StatusBarService {
@@ -14,6 +14,7 @@ export class StatusBarService {
   private showPlanName: boolean;
   private displayStyle: 'percentage' | 'progressBar' | 'dots';
   private localizationService: LocalizationService;
+  private showUsagePaceTracking: boolean;
 
   private isQuickRefreshing: boolean = false;
   private refreshStartTime: number = 0;
@@ -24,7 +25,8 @@ export class StatusBarService {
     criticalThreshold: number = 30,
     showPromptCredits: boolean = false,
     showPlanName: boolean = false,
-    displayStyle: 'percentage' | 'progressBar' | 'dots' = 'progressBar'
+    displayStyle: 'percentage' | 'progressBar' | 'dots' = 'progressBar',
+    showUsagePaceTracking: boolean = true
   ) {
     this.localizationService = LocalizationService.getInstance();
     this.statusBarItem = vscode.window.createStatusBarItem(
@@ -37,6 +39,7 @@ export class StatusBarService {
     this.showPromptCredits = showPromptCredits;
     this.showPlanName = showPlanName;
     this.displayStyle = displayStyle;
+    this.showUsagePaceTracking = showUsagePaceTracking;
   }
 
   updateDisplay(snapshot: QuotaSnapshot): void {
@@ -81,22 +84,23 @@ export class StatusBarService {
       const emoji = this.getModelEmoji(model.label);
       const shortName = this.getShortModelName(model.label);
       const indicator = this.getStatusIndicator(model.remainingPercentage ?? 0);
+      const usagePaceStr = this.showUsagePaceTracking ? ` ${this.formatUsagePaceGap(model.usagePaceGap, model.paceStatus)}` : '';
 
       if (model.isExhausted) {
         if (this.displayStyle === 'percentage') {
-          parts.push(`${indicator} ${emoji} ${shortName}: 0%`);
+          parts.push(`${indicator} ${emoji} ${shortName}: 0%${usagePaceStr}`);
         } else if (this.displayStyle === 'dots') {
-          parts.push(`${indicator} ${emoji} ${shortName} ${this.getDotsBar(0)}`);
+          parts.push(`${indicator} ${emoji} ${shortName} ${this.getDotsBar(0)}${usagePaceStr}`);
         } else {
-          parts.push(`${indicator} ${emoji} ${shortName} ${this.getProgressBar(0)}`);
+          parts.push(`${indicator} ${emoji} ${shortName} ${this.getProgressBar(0)}${usagePaceStr}`);
         }
       } else if (model.remainingPercentage !== undefined) {
         if (this.displayStyle === 'percentage') {
-          parts.push(`${indicator} ${emoji} ${shortName}: ${model.remainingPercentage.toFixed(0)}%`);
+          parts.push(`${indicator} ${emoji} ${shortName}: ${model.remainingPercentage.toFixed(0)}%${usagePaceStr}`);
         } else if (this.displayStyle === 'dots') {
-          parts.push(`${indicator} ${emoji} ${shortName} ${this.getDotsBar(model.remainingPercentage)}`);
+          parts.push(`${indicator} ${emoji} ${shortName} ${this.getDotsBar(model.remainingPercentage)}${usagePaceStr}`);
         } else {
-          parts.push(`${indicator} ${emoji} ${shortName} ${this.getProgressBar(model.remainingPercentage)}`);
+          parts.push(`${indicator} ${emoji} ${shortName} ${this.getProgressBar(model.remainingPercentage)}${usagePaceStr}`);
         }
       }
     }
@@ -109,7 +113,8 @@ export class StatusBarService {
       // Use space as separator
       const displayText = parts.join('  ');
       this.statusBarItem.text = displayText;
-      // 移除背景色变化，保持默认
+
+      // No background color change - use emoji in formatUsagePaceGap instead
       this.statusBarItem.backgroundColor = undefined;
       this.statusBarItem.color = undefined;
       this.updateTooltip(snapshot);
@@ -156,6 +161,54 @@ export class StatusBarService {
     this.displayStyle = value;
   }
 
+  setShowUsagePaceTracking(value: boolean): void {
+    this.showUsagePaceTracking = value;
+  }
+
+  /**
+   * Format usage pace for tooltip display
+   * Shows: status text (with emoji) + bold percentage
+   */
+  private formatUsagePaceForTooltip(gap?: number, paceStatus?: PaceStatus): string {
+    if (gap === undefined) return '';
+
+    const sign = gap >= 0 ? '-' : '+';
+    const percentage = `${sign}${Math.abs(gap).toFixed(0)}%`;
+
+    // Get localized status text based on pace status
+    let statusText = '';
+    switch (paceStatus) {
+      case 'critical':
+        statusText = this.localizationService.t('usagePace.critical');
+        break;
+      case 'behind':
+        statusText = this.localizationService.t('usagePace.behind');
+        break;
+      case 'ahead':
+        statusText = this.localizationService.t('usagePace.ahead');
+        break;
+      default:
+        statusText = this.localizationService.t('usagePace.onTrack');
+    }
+
+    return `${statusText} **${percentage}**`;
+  }
+
+  /**
+   * Format usage pace for status bar display
+   * Shows: arrow emoji + percentage
+   */
+  private formatUsagePaceGap(gap?: number, paceStatus?: PaceStatus): string {
+    if (gap === undefined) return '';
+
+    const sign = gap >= 0 ? '-' : '+';
+    const emoji = paceStatus === 'critical' ? '⏬' :
+      paceStatus === 'behind' ? '⬇️' :
+        paceStatus === 'ahead' ? '⬆️' : '➡️';
+
+    return `${emoji}${sign}${Math.abs(gap).toFixed(0)}%`;
+  }
+
   private updateTooltip(snapshot: QuotaSnapshot): void {
     const md = new vscode.MarkdownString();
     md.isTrusted = true;
@@ -174,8 +227,14 @@ export class StatusBarService {
     const sortedModels = [...snapshot.models].sort((a, b) => a.label.localeCompare(b.label));
 
     if (sortedModels.length > 0) {
-      md.appendMarkdown(`| ${this.localizationService.t('tooltip.model')} | ${this.localizationService.t('tooltip.status')} | ${this.localizationService.t('tooltip.resetTime')} |\n`);
-      md.appendMarkdown(`| :--- | :--- | :--- |\n`);
+      // Build table header dynamically based on showUsagePaceTracking
+      if (this.showUsagePaceTracking) {
+        md.appendMarkdown(`| ${this.localizationService.t('tooltip.model')} | ${this.localizationService.t('tooltip.status')} | ${this.localizationService.t('tooltip.usagePace')} | ${this.localizationService.t('tooltip.resetTime')} |\n`);
+        md.appendMarkdown(`| :--- | :--- | :--- | :--- |\n`);
+      } else {
+        md.appendMarkdown(`| ${this.localizationService.t('tooltip.model')} | ${this.localizationService.t('tooltip.status')} | ${this.localizationService.t('tooltip.resetTime')} |\n`);
+        md.appendMarkdown(`| :--- | :--- | :--- |\n`);
+      }
 
       for (const model of sortedModels) {
         const emoji = this.getModelEmoji(model.label);
@@ -188,7 +247,12 @@ export class StatusBarService {
           status = `${model.remainingPercentage.toFixed(1)}%`;
         }
 
-        md.appendMarkdown(`| ${emoji} ${name} | ${status} | ${model.timeUntilResetFormatted} |\n`);
+        if (this.showUsagePaceTracking) {
+          const usagePaceDisplay = this.formatUsagePaceForTooltip(model.usagePaceGap, model.paceStatus);
+          md.appendMarkdown(`| ${emoji} ${name} | ${status} | ${usagePaceDisplay} | ${model.timeUntilResetFormatted} |\n`);
+        } else {
+          md.appendMarkdown(`| ${emoji} ${name} | ${status} | ${model.timeUntilResetFormatted} |\n`);
+        }
       }
     }
 

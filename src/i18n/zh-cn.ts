@@ -24,6 +24,13 @@ export const zh_cn: TranslationMap = {
     'tooltip.clickToRetry': '点击重试',
     'tooltip.clickToRecheck': '点击重新检查登录状态',
 
+    // 使用节奏追踪
+    'tooltip.usagePace': '使用节奏',
+    'usagePace.ahead': '✅超前',
+    'usagePace.onTrack': '✅正常',
+    'usagePace.behind': '⚠️落后',
+    'usagePace.critical': '🚨严重落后!',
+
     // 消息
     'msg.portDetectionFailed': 'Antigravity Quota Watcher: 端口检测失败。请确保 Antigravity 正在运行。',
     'msg.portDetectionSuccess': 'Antigravity Quota Watcher: 端口检测成功。',

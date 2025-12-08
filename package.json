@@ -116,6 +116,35 @@
           ],
           "description": "%config.language%",
           "order": 80
+        },
+        "antigravityQuotaWatcher.quotaCycleDuration": {
+          "type": "number",
+          "default": 300,
+          "minimum": 1,
+          "description": "%config.quotaCycleDuration%",
+          "order": 90
+        },
+        "antigravityQuotaWatcher.showUsagePaceTracking": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.showUsagePaceTracking%",
+          "order": 91
+        },
+        "antigravityQuotaWatcher.usagePaceWarningGap": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 100,
+          "description": "%config.usagePaceWarningGap%",
+          "order": 92
+        },
+        "antigravityQuotaWatcher.usagePaceCriticalGap": {
+          "type": "number",
+          "default": 30,
+          "minimum": 1,
+          "maximum": 100,
+          "description": "%config.usagePaceCriticalGap%",
+          "order": 93
         }
       }
     }

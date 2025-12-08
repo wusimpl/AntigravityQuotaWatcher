@@ -11,5 +11,9 @@
     "config.showPlanName": "Show plan name in status bar (not officially enabled yet)",
     "config.showPromptCredits": "Show Prompt Credits (not officially enabled yet)",
     "config.forcePowerShell": "Use PowerShell mode for process detection [Windows only, requires extension restart]",
-    "config.language": "Language / 语言"
+    "config.language": "Language / 语言",
+    "config.quotaCycleDuration": "Quota reset cycle duration in minutes (default: 300 = 5 hours)",
+    "config.showUsagePaceTracking": "Show usage pace tracking (compare actual vs ideal consumption rate)",
+    "config.usagePaceWarningGap": "Usage pace warning threshold: alert when behind by this percentage",
+    "config.usagePaceCriticalGap": "Usage pace critical threshold: urgent alert when behind by this percentage"
 }

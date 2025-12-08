@@ -43,6 +43,8 @@ export interface PromptCreditsInfo {
   remainingPercentage: number;
 }
 
+export type PaceStatus = 'ahead' | 'onTrack' | 'behind' | 'critical';
+
 export interface ModelQuotaInfo {
   label: string;
   modelId: string;
@@ -52,6 +54,11 @@ export interface ModelQuotaInfo {
   resetTime: Date;
   timeUntilReset: number;
   timeUntilResetFormatted: string;
+  // Usage Pace tracking fields
+  usedPercentage?: number;           // (1 - remainingFraction) * 100
+  idealUsedPercentage?: number;      // Expected usage based on time elapsed
+  usagePaceGap?: number;             // idealUsed - actualUsed (positive = behind)
+  paceStatus?: PaceStatus;           // Usage pace indicator
 }
 
 export interface QuotaSnapshot {
@@ -80,4 +87,9 @@ export interface Config {
   showPlanName: boolean;
   displayStyle: 'percentage' | 'progressBar' | 'dots';
   language: 'auto' | 'en' | 'zh-cn';
+  // Usage Pace tracking configuration
+  quotaCycleDuration: number;         // Quota cycle duration in minutes (default 300 = 5 hours)
+  showUsagePaceTracking: boolean;     // Whether to show usage pace tracking
+  usagePaceWarningGap: number;        // Warning threshold (behind percentage), default 10
+  usagePaceCriticalGap: number;       // Critical threshold (behind percentage), default 30
 }

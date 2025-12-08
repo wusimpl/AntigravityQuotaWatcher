@@ -21,6 +21,13 @@ export type TranslationKey =
     | 'tooltip.notLoggedIn'
     | 'tooltip.clickToRetry'
     | 'tooltip.clickToRecheck'
+    | 'tooltip.usagePace'
+
+    // Usage Pace tracking
+    | 'usagePace.ahead'
+    | 'usagePace.onTrack'
+    | 'usagePace.behind'
+    | 'usagePace.critical'
 
     // Messages
     | 'msg.portDetectionFailed'

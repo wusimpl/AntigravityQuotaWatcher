@@ -22,7 +22,12 @@ export class ConfigService {
       showPromptCredits: config.get<boolean>('showPromptCredits', false),
       showPlanName: config.get<boolean>('showPlanName', false),
       displayStyle: (config.get<string>('displayStyle', 'progressBar') as Config['displayStyle']),
-      language: (config.get<string>('language', 'auto') as Config['language'])
+      language: (config.get<string>('language', 'auto') as Config['language']),
+      // Usage Pace tracking configuration
+      quotaCycleDuration: config.get<number>('quotaCycleDuration', 300),
+      showUsagePaceTracking: config.get<boolean>('showUsagePaceTracking', true),
+      usagePaceWarningGap: config.get<number>('usagePaceWarningGap', 10),
+      usagePaceCriticalGap: config.get<number>('usagePaceCriticalGap', 30)
     };
   }
 
