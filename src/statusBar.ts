@@ -11,7 +11,8 @@ export class StatusBarService {
   private warningThreshold: number;
   private criticalThreshold: number;
   private showPromptCredits: boolean;
-  private displayStyle: 'percentage' | 'progressBar';
+  private showPlanName: boolean;
+  private displayStyle: 'percentage' | 'progressBar' | 'dots';
   private localizationService: LocalizationService;
 
   private isQuickRefreshing: boolean = false;
@@ -22,7 +23,8 @@ export class StatusBarService {
     warningThreshold: number = 50,
     criticalThreshold: number = 30,
     showPromptCredits: boolean = false,
-    displayStyle: 'percentage' | 'progressBar' = 'progressBar'
+    showPlanName: boolean = false,
+    displayStyle: 'percentage' | 'progressBar' | 'dots' = 'progressBar'
   ) {
     this.localizationService = LocalizationService.getInstance();
     this.statusBarItem = vscode.window.createStatusBarItem(
@@ -33,6 +35,7 @@ export class StatusBarService {
     this.warningThreshold = warningThreshold;
     this.criticalThreshold = criticalThreshold;
     this.showPromptCredits = showPromptCredits;
+    this.showPlanName = showPlanName;
     this.displayStyle = displayStyle;
   }
 
@@ -59,11 +62,10 @@ export class StatusBarService {
 
     const parts: string[] = [];
 
-    // Display Plan Name if available
-    if (snapshot.planName) {
+    // Display Plan Name if available and enabled
+    if (this.showPlanName && snapshot.planName) {
       const planNameFormatted = this.formatPlanName(snapshot.planName);
-      // Use a separator like 'PRO |' or just 'PRO'
-      parts.push(`${planNameFormatted}`);
+      parts.push(`Plan: ${planNameFormatted}`);
     }
 
     if (this.showPromptCredits && snapshot.promptCredits) {
@@ -81,16 +83,20 @@ export class StatusBarService {
       const indicator = this.getStatusIndicator(model.remainingPercentage ?? 0);
 
       if (model.isExhausted) {
-        if (this.displayStyle === 'progressBar') {
-          parts.push(`${indicator} ${emoji} ${shortName} ${this.getProgressBar(0)}`);
-        } else {
+        if (this.displayStyle === 'percentage') {
           parts.push(`${indicator} ${emoji} ${shortName}: 0%`);
+        } else if (this.displayStyle === 'dots') {
+          parts.push(`${indicator} ${emoji} ${shortName} ${this.getDotsBar(0)}`);
+        } else {
+          parts.push(`${indicator} ${emoji} ${shortName} ${this.getProgressBar(0)}`);
         }
       } else if (model.remainingPercentage !== undefined) {
-        if (this.displayStyle === 'progressBar') {
-          parts.push(`${indicator} ${emoji} ${shortName} ${this.getProgressBar(model.remainingPercentage)}`);
-        } else {
+        if (this.displayStyle === 'percentage') {
           parts.push(`${indicator} ${emoji} ${shortName}: ${model.remainingPercentage.toFixed(0)}%`);
+        } else if (this.displayStyle === 'dots') {
+          parts.push(`${indicator} ${emoji} ${shortName} ${this.getDotsBar(model.remainingPercentage)}`);
+        } else {
+          parts.push(`${indicator} ${emoji} ${shortName} ${this.getProgressBar(model.remainingPercentage)}`);
         }
       }
     }
@@ -100,8 +106,8 @@ export class StatusBarService {
       this.statusBarItem.backgroundColor = undefined;
       this.statusBarItem.tooltip = this.localizationService.t('tooltip.error');
     } else {
-      // Use double space + pipe or some other cleaner separator
-      const displayText = parts.join(' | ');
+      // Use space as separator
+      const displayText = parts.join('  ');
       this.statusBarItem.text = displayText;
       // 移除背景色变化，保持默认
       this.statusBarItem.backgroundColor = undefined;
@@ -142,7 +148,11 @@ export class StatusBarService {
     this.showPromptCredits = value;
   }
 
-  setDisplayStyle(value: 'percentage' | 'progressBar'): void {
+  setShowPlanName(value: boolean): void {
+    this.showPlanName = value;
+  }
+
+  setDisplayStyle(value: 'percentage' | 'progressBar' | 'dots'): void {
     this.displayStyle = value;
   }
 
@@ -164,7 +174,7 @@ export class StatusBarService {
     const sortedModels = [...snapshot.models].sort((a, b) => a.label.localeCompare(b.label));
 
     if (sortedModels.length > 0) {
-      md.appendMarkdown(`| Model | Status | ${this.localizationService.t('tooltip.resetTime')} |\n`);
+      md.appendMarkdown(`| ${this.localizationService.t('tooltip.model')} | ${this.localizationService.t('tooltip.status')} | ${this.localizationService.t('tooltip.resetTime')} |\n`);
       md.appendMarkdown(`| :--- | :--- | :--- |\n`);
 
       for (const model of sortedModels) {
@@ -262,6 +272,21 @@ export class StatusBarService {
     // 确保百分比在 0-100 之间
     const p = Math.max(0, Math.min(100, percentage));
 
+    // 8 blocks for finer granularity: ████████ / ██░░░░░░
+    const totalBlocks = 8;
+    const filledBlocks = Math.round((p / 100) * totalBlocks);
+    const emptyBlocks = totalBlocks - filledBlocks;
+
+    const filledChar = '█';
+    const emptyChar = '░';
+
+    return `${filledChar.repeat(filledBlocks)}${emptyChar.repeat(emptyBlocks)}`;
+  }
+
+  private getDotsBar(percentage: number): string {
+    // 确保百分比在 0-100 之间
+    const p = Math.max(0, Math.min(100, percentage));
+
     // 5 dots for cleaner look: ●●●○○
     const totalDots = 5;
     const filledDots = Math.round((p / 100) * totalDots);
@@ -274,18 +299,8 @@ export class StatusBarService {
   }
 
   private formatPlanName(rawName: string): string {
-    const upper = rawName.toUpperCase();
-    if (upper.includes('FREE')) {
-      return 'FREE';
-    }
-    if (upper.includes('PRO')) {
-      return 'PRO';
-    }
-    if (upper.includes('ULTRA')) {
-      return 'ULTRA';
-    }
-    // Fallback for unknown plans, remove 'INDIVIDUAL_' etc if needed, or just return upper
-    return upper.replace('INDIVIDUAL_', '');
+    // Display as-is from API response
+    return rawName;
   }
 
   /**

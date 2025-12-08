@@ -20,6 +20,7 @@ export class ConfigService {
       criticalThreshold: config.get<number>('criticalThreshold', 30),
       apiMethod: (config.get<string>('apiMethod', 'GET_USER_STATUS') as Config['apiMethod']),
       showPromptCredits: config.get<boolean>('showPromptCredits', false),
+      showPlanName: config.get<boolean>('showPlanName', false),
       displayStyle: (config.get<string>('displayStyle', 'progressBar') as Config['displayStyle']),
       language: (config.get<string>('language', 'auto') as Config['language'])
     };

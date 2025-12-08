@@ -8,5 +8,8 @@
     "config.apiMethod": "API 调用方式: GET_USER_STATUS (获取完整配额) 或 COMMAND_MODEL_CONFIG (兼容模式)",
     "config.warningThreshold": "警告阈值 (%)",
     "config.criticalThreshold": "临界阈值 (%)",
+    "config.showPlanName": "在状态栏显示套餐级别（官方暂未启用此字段）",
+    "config.showPromptCredits": "显示 Prompt Credits（官方暂未启用此字段）",
+    "config.forcePowerShell": "使用 PowerShell 模式检测进程【仅 Windows 系统可用，插件重启生效】",
     "config.language": "Language / 语言"
 }

@@ -2,7 +2,7 @@
   "name": "antigravity-quota-watcher",
   "displayName": "Antigravity Quota Watcher",
   "description": "实时监控 Antigravity的模型使用配额",
-  "version": "0.8.1",
+  "version": "0.7.6",
   "publisher": "antigravity-tools",
   "icon": "icon.png",
   "engines": {
@@ -47,14 +47,16 @@
         },
         "antigravityQuotaWatcher.displayStyle": {
           "type": "string",
-          "default": "progressBar",
+          "default": "percentage",
           "enum": [
             "percentage",
-            "progressBar"
+            "progressBar",
+            "dots"
           ],
           "enumDescriptions": [
-            "Show percentage / 显示百分比 (e.g. 🤖 Claude: 85%)",
-            "Show progress bar / 显示进度条 (e.g. 🤖 Claude ███████░)"
+            "Show percentage / 显示百分比 (e.g. 🟢 Claude: 85%)",
+            "Show progress bar / 显示方块进度条 (e.g. 🟢 Claude ███████░)",
+            "Show dots / 显示圆点进度条 (e.g. 🟢 Claude ●●●●○)"
           ],
           "description": "%config.displayStyle%",
           "order": 30
@@ -84,13 +86,19 @@
         "antigravityQuotaWatcher.showPromptCredits": {
           "type": "boolean",
           "default": false,
-          "description": "是否显示 Prompt Credits（此信息官方暂时没有使用）",
+          "description": "%config.showPromptCredits%",
           "order": 70
+        },
+        "antigravityQuotaWatcher.showPlanName": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.showPlanName%",
+          "order": 72
         },
         "antigravityQuotaWatcher.forcePowerShell": {
           "type": "boolean",
           "default": true,
-          "description": "使用 PowerShell 模式检测进程【仅 Windows系统可用，插件重启生效】",
+          "description": "%config.forcePowerShell%",
           "order": 75
         },
         "antigravityQuotaWatcher.language": {
@@ -134,7 +142,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/antigravity-tools/antigravity-quota-watcher.git"
+    "url": "https://github.com/wusimpl/AntigravityQuotaWatcher.git"
   },
   "keywords": [
     "antigravity",

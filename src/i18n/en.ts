@@ -17,6 +17,8 @@ export const en: TranslationMap = {
     'tooltip.remaining': 'Remaining',
     'tooltip.depleted': '⚠️ **Depleted**',
     'tooltip.resetTime': 'Reset',
+    'tooltip.model': 'Model',
+    'tooltip.status': 'Status',
     'tooltip.error': 'Error fetching quota information.',
     'tooltip.notLoggedIn': 'Sign in to your Google account to view model quota information.',
     'tooltip.clickToRetry': 'Click to retry',

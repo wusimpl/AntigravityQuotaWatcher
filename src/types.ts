@@ -77,6 +77,7 @@ export interface Config {
   criticalThreshold: number;
   apiMethod: ApiMethodPreference;
   showPromptCredits: boolean;
-  displayStyle: 'percentage' | 'progressBar';
+  showPlanName: boolean;
+  displayStyle: 'percentage' | 'progressBar' | 'dots';
   language: 'auto' | 'en' | 'zh-cn';
 }

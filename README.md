@@ -105,6 +105,10 @@
 - 如果状态栏显示错误，可使用"重新检测端口"命令修复
 - **Windows 用户**：如果遇到端口检测错误，可以在设置中切换 `forcePowerShell` 选项。
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=wusimpl/AntigravityQuotaWatcher&type=Date)](https://star-history.com/#wusimpl/AntigravityQuotaWatcher&Date)
+
 ## 许可证
 
 MIT License

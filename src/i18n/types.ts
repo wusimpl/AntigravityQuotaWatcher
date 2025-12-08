@@ -15,6 +15,8 @@ export type TranslationKey =
     | 'tooltip.remaining'
     | 'tooltip.depleted'
     | 'tooltip.resetTime'
+    | 'tooltip.model'
+    | 'tooltip.status'
     | 'tooltip.error'
     | 'tooltip.notLoggedIn'
     | 'tooltip.clickToRetry'
