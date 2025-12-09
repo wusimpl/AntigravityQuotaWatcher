@@ -1,6 +1,7 @@
 import * as https from "https";
 import * as http from "http";
 import { UserStatusResponse, QuotaSnapshot, PromptCreditsInfo, ModelQuotaInfo, ModelConfig } from "./types";
+import { versionInfo } from "./versionInfo";
 
 // API 方法枚举
 export enum QuotaApiMethod {
@@ -343,6 +344,7 @@ export class QuotaService {
           metadata: {
             ideName: 'antigravity',
             extensionName: 'antigravity',
+            ideVersion: versionInfo.getIdeVersion(),
             locale: 'en'
           }
         }

@@ -9,6 +9,7 @@ import { ConfigService } from './configService';
 import { PortDetectionService, PortDetectionResult } from './portDetectionService';
 import { Config, QuotaSnapshot } from './types';
 import { LocalizationService } from './i18n/localizationService';
+import { versionInfo } from './versionInfo';
 
 let quotaService: QuotaService | undefined;
 let statusBarService: StatusBarService | undefined;
@@ -20,7 +21,10 @@ let configChangeTimer: NodeJS.Timeout | undefined;  // 配置变更防抖定时�
  * Called when the extension is activated
  */
 export async function activate(context: vscode.ExtensionContext) {
-  console.log('Antigravity Quota Watcher activated');
+  // Initialize and print version info
+  versionInfo.initialize(context);
+  console.log(`=== Antigravity Quota Watcher v${versionInfo.getExtensionVersion()} ===`);
+  console.log(`Running on: ${versionInfo.getIdeName()} v${versionInfo.getIdeVersion()}`);
 
   // Init services
   configService = new ConfigService();

@@ -7,7 +7,7 @@
 > 本插件依赖于 Antigravity 语言服务器的内部实现细节，相关机制可能会随时变动。
 >
 
-> **💻 系统要求 / System Requirements**
+> **💻 系统要求**
 >
 > 本插件目前 现已支持 Windows-amd64/Mac/Linux 操作系统，不支持 Windows-arm64系统。
 

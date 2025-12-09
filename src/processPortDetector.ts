@@ -8,6 +8,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as https from 'https';
 import { PlatformDetector, IPlatformStrategy } from './platformDetector';
+import { versionInfo } from './versionInfo';
 
 const execAsync = promisify(exec);
 
@@ -191,13 +192,13 @@ export class ProcessPortDetector {
         context: {
           properties: {
             devMode: "false",
-            extensionVersion: "",
+            extensionVersion: versionInfo.getExtensionVersion(),
             hasAnthropicModelAccess: "true",
             ide: "antigravity",
-            ideVersion: "1.11.2",
+            ideVersion: versionInfo.getIdeVersion(),
             installationId: "test-detection",
             language: "UNSPECIFIED",
-            os: "windows",
+            os: versionInfo.getOs(),
             requestedModelId: "MODEL_UNSPECIFIED"
           }
         }
