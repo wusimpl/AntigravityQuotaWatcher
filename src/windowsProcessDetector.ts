@@ -7,10 +7,10 @@ import { IPlatformStrategy } from './platformDetector';
 
 export class WindowsProcessDetector implements IPlatformStrategy {
     private static readonly SYSTEM_ROOT: string = process.env.SystemRoot || 'C:\\Windows';
-    private static readonly POWERSHELL_PATH: string = `${WindowsProcessDetector.SYSTEM_ROOT}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`;
-    private static readonly WMIC_PATH: string = `${WindowsProcessDetector.SYSTEM_ROOT}\\System32\\wbem\\wmic.exe`;
-    private static readonly NETSTAT_PATH: string = `${WindowsProcessDetector.SYSTEM_ROOT}\\System32\\netstat.exe`;
-    private static readonly FINDSTR_PATH: string = `${WindowsProcessDetector.SYSTEM_ROOT}\\System32\\findstr.exe`;
+    private static readonly POWERSHELL_PATH: string = `"${WindowsProcessDetector.SYSTEM_ROOT}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"`;
+    private static readonly WMIC_PATH: string = `"${WindowsProcessDetector.SYSTEM_ROOT}\\System32\\wbem\\wmic.exe"`;
+    private static readonly NETSTAT_PATH: string = `"${WindowsProcessDetector.SYSTEM_ROOT}\\System32\\netstat.exe"`;
+    private static readonly FINDSTR_PATH: string = `"${WindowsProcessDetector.SYSTEM_ROOT}\\System32\\findstr.exe"`;
 
     private usePowerShell: boolean = true;
 
