@@ -18,7 +18,7 @@
     "config.showGeminiFlash": "Show Gemini Flash (G Flash) quota in status bar",
     "config.showPromptCredits": "Show Prompt Credits (not officially enabled yet)",
     "config.forcePowerShell": "Use PowerShell mode for process detection [Windows only, requires extension restart]",
-    "config.language": "Language / 语言",
+    "config.language": "Language",
     "config.logLevel": "Log level for debugging",
     "config.proxyEnabled": "Enable proxy for network requests",
     "config.proxyAutoDetect": "Auto-detect system proxy (HTTPS_PROXY, HTTP_PROXY environment variables)",

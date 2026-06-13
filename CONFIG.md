@@ -1,97 +1,96 @@
-# ⚙️ 配置选项
+# ⚙️ Configuration Options
 
-打开 VS Code 设置（`文件` > `首选项` > `设置`），搜索 `Antigravity Quota Watcher`：
+Open VS Code settings (`File` > `Preferences` > `Settings`), and search for `Antigravity Quota Watcher`:
 
-## 启用自动监控
-- **默认值**：`true`
-- **说明**：是否启用配额监控
+## Enable Auto Monitoring
+- **Default**: `true`
+- **Description**: Whether to enable quota monitoring
 
-## 轮询间隔
-- **默认值**：`60`（秒）
-- **说明**：配额数据刷新频率，建议设置为 30-60 秒
+## Polling Interval
+- **Default**: `60` (seconds)
+- **Description**: Quota data refresh frequency, recommended to set between 30-60 seconds
 
-## 警告阈值
-- **默认值**：`50`（百分比）
-- **说明**：配额低于此百分比时状态栏显示黄色警告符号（🟡）
+## Warning Threshold
+- **Default**: `50` (percentage)
+- **Description**: When quota falls below this percentage, the status bar displays a yellow warning symbol (🟡)
 
-## 临界阈值
-- **默认值**：`30`（百分比）
-- **说明**：配额低于此百分比时状态栏显示红色错误符号（🔴）
+## Critical Threshold
+- **Default**: `30` (percentage)
+- **Description**: When quota falls below this percentage, the status bar displays a red error symbol (🔴)
 
-## 状态栏显示样式
-- **默认值**：`progressBar`
-- **选项**：
-  - `progressBar`：显示进度条（ `████░░░░`）
-  - `percentage`：显示百分比（ `80%`）
-  - `dots`：显示圆点（ `●●●○○`）
-- **说明**：选择状态栏的显示风格
+## Status Bar Display Style
+- **Default**: `progressBar`
+- **Options**:
+  - `progressBar`: Display progress bar (`████░░░░`)
+  - `percentage`: Display percentage (`80%`)
+  - `dots`: Display dots (`●●●○○`)
+- **Description**: Choose the status bar display style
 
-## API 方法选择
-- **默认值**：`GOOGLE_API`
-- **选项**：
-  - `GOOGLE_API`：远程模式 - 直接调用 Google Cloud Code API 获取配额，数据基本是最新的，响应快速
-  - `GET_USER_STATUS`：本地模式 - 通过本地 Antigravity 语言服务器获取配额，存在较大延迟（因为依赖 LSP）
-- **说明**：选择配额获取方式
+## API Method Selection
+- **Default**: `GET_USER_STATUS`
+- **Options**:
+  - `GOOGLE_API`: Remote mode - Directly calls Google Cloud Code API to fetch quota, data is almost real-time with fast response
+  - `GET_USER_STATUS`: Local mode - Fetches quota through local Antigravity language server, has significant delay (depends on LSP)
+- **Description**: Choose the quota fetching method
 
-
-### Google API 方式使用说明
+### Google API Usage Instructions
 
 > [!WARNING]
-> **安全提醒**：`GOOGLE_API` 方法需要登录您的 Google 账号以获取 `access token` 和 `refresh token`。这些 token 属于**敏感凭证信息**，若泄露，他人可通过您的 `refresh token` 使用您账号的 AI 额度。
+> **Security Notice**: The `GOOGLE_API` method requires logging into your Google account to obtain `access token` and `refresh token`. These tokens are **sensitive credentials** - if leaked, anyone can use your `refresh token` to consume your account's AI quota.
 >
-> **本项目承诺**：本项目完全开源免费，**绝不保存或上传任何用户 token**，所有凭证仅存储在您本地设备中。
+> **Our Commitment**: This project is completely open-source and free. We **never store or upload any user tokens** - all credentials are stored only on your local device.
 >
-> **风险警示**：目前基于本项目的 fork 版本较多，请大家注意甄别风险。在安装任何配额插件前，建议先借助 AI 工具审查其代码，确认是否安全、是否存在后门。
+> **Risk Warning**: There are currently many fork versions based on this project. Please be vigilant about potential risks. Before installing any quota watching plugins, we recommend using AI tools to review its code to ensure it is safe and free of backdoors.
 
-如果选择 `GOOGLE_API` 方法，需要使用 Google 账号登录：
+If you choose the `GOOGLE_API` method, you need to login with your Google account:
 
-**登录方式**：
-1. 点击右下角插件状态栏提示语
-2. 在浏览器中完成 Google 账号授权
-3. 授权成功后插件会自动开始获取配额
+**Login Method**:
+1. Click the bottom-right extension status bar prompt
+2. Complete Google account authorization in the browser
+3. After successful authorization, the extension will automatically start fetching quota
 
-**登出方式**：
-1. 打开命令面板（`Ctrl+Shift+P` 或 `Cmd+Shift+P`）
-2. 输入并执行 `Antigravity Quota Watcher: Google Logout`
+**Logout Method**:
+1. Open command palette (`Ctrl+Shift+P` or `Cmd+Shift+P`)
+2. Type and execute `Antigravity Quota Watcher: Google Logout`
 
-### 自动检测本地 Token
+### Auto-detect Local Token
 
-如果您已经在 Antigravity IDE 中登录了 Google 账号，插件会自动检测本地的登录凭证：
+If you have already logged into your Google account in the Antigravity IDE, the plugin will automatically detect local login credentials:
 
-1. **未登录状态**：插件会检测本地 Antigravity 是否已登录，如果检测到有效的登录凭证，会弹窗询问是否直接使用本地账号登录
-2. **已登录状态（使用本地 Token）**：如果您的账号是通过本地 Token 导入的，插件会定期检查本地 Antigravity 的登录状态变化：
-   - 如果本地切换了账号，会弹窗询问是否同步新账号
-   - 如果本地退出了登录，会弹窗询问是否同步退出
+1. **Not Logged In**: The plugin will detect if local Antigravity is logged in. If valid credentials are detected, a prompt will ask whether to use the local account to log in directly
+2. **Logged In (using Local Token)**: If your account was imported via local Token, the plugin will periodically check for changes in local Antigravity login status:
+   - If the local account is switched, a prompt will ask whether to sync the new account
+   - If the local account logs out, a prompt will ask whether to sync the logout
 
 > [!TIP]
-> 本地 Token 检测路径：
+> Local Token detection paths:
 > - **Windows**: `%APPDATA%\Antigravity\User\globalStorage\state.vscdb`
 > - **macOS**: `~/Library/Application Support/Antigravity/User/globalStorage/state.vscdb`
 > - **Linux**: `~/.config/Antigravity/User/globalStorage/state.vscdb`
 
 
-## PowerShell 模式（仅 Windows 系统可用）
-- **默认值**：`true`，如果false，则使用wmic检测进程
-- **说明**：使用 PowerShell 模式检测进程
-- **适用场景**：如果在 Windows 系统上遇到端口检测错误，可以尝试切换此选项。插件重启生效。
+## PowerShell Mode (Windows only)
+- **Default**: `true`, if false, uses wmic to detect processes
+- **Description**: Use PowerShell mode to detect processes
+- **Use Case**: If you encounter port detection errors on Windows, try toggling this option. Requires plugin restart to take effect.
 
-## 显示 Gemini 3 Pro (G Pro) 额度
-- **默认值**：`true`
-- **说明**：是否在状态栏显示 Gemini Pro 的额度信息
+## Show Gemini Pro (G Pro) Quota
+- **Default**: `true`
+- **Description**: Whether to display Gemini Pro quota in the status bar
 
-## 显示 Gemini 3 Flash (G Flash) 额度
-- **默认值**：`true`
-- **说明**：是否在状态栏显示 Gemini Flash 的额度信息
+## Show Gemini Flash (G Flash) Quota
+- **Default**: `true`
+- **Description**: Whether to display Gemini Flash quota in the status bar
 
-## 显示账号级别
-- **默认值**：`false`
-- **说明**：是否在状态栏显示账号级别（如 Free、Pro）
+## Show Account Tier
+- **Default**: `false`
+- **Description**: Whether to display account tier in the status bar (e.g., Free, Pro)
 
-## 语言设置
-- **默认值**：`zh-cn`
-- **选项**：
-  - `auto`：自动跟随 VS Code 语言设置
-  - `en`：英语
-  - `zh-cn`：简体中文
-- **说明**：设置状态栏语言，默认自动跟随 VS Code 语言
-> 如果要更改配置设置页面的显示语言，需要将antigravity的语言设置为中文
+## Language Settings
+- **Default**: `zh-cn`
+- **Options**:
+  - `auto`: Automatically follow VS Code language settings
+  - `en`: English
+  - `zh-cn`: Simplified Chinese
+- **Description**: Set status bar language, defaults to automatically follow VS Code language
+> To change the configuration settings page display language, you need to set Antigravity's language to Chinese
