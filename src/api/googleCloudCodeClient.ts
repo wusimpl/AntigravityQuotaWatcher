@@ -14,6 +14,7 @@ import {
 } from '../auth/constants';
 import { logger } from '../logger';
 import { ProxyService } from '../proxyService';
+import { shouldIncludeGeminiModel } from '../geminiModelSelection';
 
 /**
  * 项目信息 (loadCodeAssist 响应)
@@ -163,19 +164,23 @@ export class GoogleCloudCodeClient {
         const allowedModelPatterns = /gemini|claude|gpt/i;
 
         for (const [modelName, modelInfo] of Object.entries(modelsMap)) {
+            const info = modelInfo as any;
+            const apiDisplayName = typeof info.displayName === 'string'
+                ? info.displayName.trim()
+                : '';
+
             // 过滤模型名称
-            if (!allowedModelPatterns.test(modelName)) {
+            if (![modelName, apiDisplayName].some(name => allowedModelPatterns.test(name))) {
                 filteredByName.push(modelName);
                 continue;
             }
 
-            // 过滤旧版本 Gemini 模型 (< 3.0)
-            if (!this.isModelVersionSupported(modelName)) {
+            // 仅过滤可识别的旧版本 Gemini；未知命名留给显示层安全回退
+            if (!this.isModelVersionSupported(modelName, apiDisplayName)) {
                 filteredByVersion.push(modelName);
                 continue;
             }
 
-            const info = modelInfo as any;
             if (info.quotaInfo) {
                 // [DEBUG] 打印关键的模型配额信息
                 logger.info('GoogleAPI', `[QUOTA_DEBUG] Model "${modelName}": remaining=${info.quotaInfo.remainingFraction}, resetTime=${info.quotaInfo.resetTime}, maxTokens=${info.maxTokens || 'N/A'}`);
@@ -209,7 +214,10 @@ export class GoogleCloudCodeClient {
         const remainingFraction = quotaInfo.remainingFraction ?? 0;
 
         // 生成友好的显示名称
-        const displayName = this.formatModelDisplayName(modelName);
+        const apiDisplayName = typeof modelInfo.displayName === 'string'
+            ? modelInfo.displayName.trim()
+            : '';
+        const displayName = apiDisplayName || this.formatModelDisplayName(modelName);
 
         return {
             modelName: modelName,
@@ -406,28 +414,16 @@ export class GoogleCloudCodeClient {
     }
 
     /**
-     * 检查模型版本是否支持 (过滤掉 3.0 以下的 Gemini)
+     * 过滤可识别的 3.0 以下 Gemini，保留未知命名以便显示层回退
      */
-    private isModelVersionSupported(modelName: string): boolean {
-        const lowerName = modelName.toLowerCase();
+    private isModelVersionSupported(modelName: string, displayName: string): boolean {
+        const names = [modelName, displayName];
 
         // 如果不是 Gemini 模型，直接支持 (如 Claude, GPT)
-        if (!lowerName.includes('gemini')) {
+        if (!names.some(name => name.toLowerCase().includes('gemini'))) {
             return true;
         }
 
-        // 提取版本号 (例如 gemini-2.5-flash -> 2.5)
-        // 匹配 patterns: gemini-1.5, gemini-2.0, gemini-1.0-pro
-        const versionMatch = lowerName.match(/gemini-(\d+(?:\.\d+)?)/);
-
-        if (versionMatch && versionMatch[1]) {
-            const version = parseFloat(versionMatch[1]);
-            // 只允许版本 >= 3.0
-            return version >= 3.0;
-        }
-
-        // 如果没有匹配到版本号的 Gemini (例如 gemini-pro, 通常指 1.0)，默认过滤掉
-        // 为了安全起见，如果不带版本号，假设是旧版本
-        return false;
+        return shouldIncludeGeminiModel({ modelId: modelName, label: displayName || modelName });
     }
 }
