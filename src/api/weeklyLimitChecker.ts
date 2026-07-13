@@ -93,7 +93,7 @@ export function getQuotaPool(modelName: string): QuotaPool {
 export function getPoolRepresentativeModel(pool: QuotaPool): string {
     switch (pool) {
         case 'gemini3':
-            return 'gemini-3.0-flash';  // Gemini 3.x 池子
+            return 'gemini-3-flash-agent';
         case 'claude_gpt':
             return 'claude-3-5-sonnet';
         case 'gemini2.5':

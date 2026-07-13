@@ -5,6 +5,7 @@ src/**
 # 开发工具配置
 .vscode/**
 .vscode-test/**
+out/test/**
 .gitignore
 .yarnrc
 .eslintrc.json

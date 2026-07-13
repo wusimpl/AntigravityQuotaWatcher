@@ -5,6 +5,7 @@
 import * as vscode from 'vscode';
 import { ModelQuotaInfo, QuotaSnapshot } from './types';
 import { LocalizationService } from './i18n/localizationService';
+import { selectLatestGeminiFlash, selectLatestGeminiProLow } from './geminiModelSelection';
 
 export class StatusBarService {
   private statusBarItem: vscode.StatusBarItem;
@@ -240,7 +241,7 @@ export class StatusBarService {
 
     // 2. Gemini Pro (Low) - 根据配置决定是否显示
     if (this.showGeminiPro) {
-      const proLow = models.find(model => this.isProLow(model.label));
+      const proLow = selectLatestGeminiProLow(models);
       if (proLow && !result.includes(proLow)) {
         result.push(proLow);
       }
@@ -248,23 +249,13 @@ export class StatusBarService {
 
     // 3. Gemini Flash - 根据配置决定是否显示
     if (this.showGeminiFlash) {
-      const flash = models.find(model => this.isGemini3Flash(model.label));
+      const flash = selectLatestGeminiFlash(models);
       if (flash && !result.includes(flash)) {
         result.push(flash);
       }
     }
 
     return result;
-  }
-
-  private isProLow(label: string): boolean {
-    const lower = label.toLowerCase();
-    return lower.includes('pro') && lower.includes('low');
-  }
-
-  private isGemini3Flash(label: string): boolean {
-    const lower = label.toLowerCase();
-    return lower.includes('gemini') && lower.includes('flash');
   }
 
   private isClaudeWithoutThinking(label: string): boolean {
