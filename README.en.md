@@ -231,6 +231,9 @@ OR
 - This plugin is an unofficial tool and has no affiliation with Antigravity. This plugin relies on internal implementation details of the Antigravity language server, which may change at any time.
 - This plugin supports VS Code fork IDEs (WindSurf, Kiro, VS Code, etc.) from V0.9.0. To watch model quotas in fork IDEs, switch to the **GOOGLE_API** method in settings. This method does not depend on the Antigravity local environment, making it also suitable for remote SSH projects.
 
+## 🔗 Recommended Ecosystem Tools
+* [Antigravity Context Meter](https://github.com/Dunphil692/antigravity-context-meter) - Real-time context telemetry, multi-session monitoring, and zero-loss session migration prompt distillation.
+
 ## Acknowledgments
  * The Google API quota retrieval method comes from the [Antigravity-Manager](https://github.com/lbjlaq/Antigravity-Manager) project. Thanks to the author for the contribution!
  * Referenced the method for obtaining Antigravity local login account Token from [anti-quota](https://github.com/fhyfhy17/anti-quota). Thanks to the author for the contribution!
