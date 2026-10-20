@@ -13,6 +13,8 @@ import { logger } from './logger';
 
 const execAsync = promisify(exec);
 
+import * as path from 'path';
+
 export class UnixProcessDetector implements IPlatformStrategy {
     private platform: NodeJS.Platform;
     /** Available port detection command: 'lsof', 'ss', or 'netstat' */
@@ -72,16 +74,16 @@ export class UnixProcessDetector implements IPlatformStrategy {
 
     /**
      * 判断命令行是否属于 Antigravity 进程
-     * 通过 --app_data_dir antigravity 或路径中包含 antigravity 来识别
+     * 通过 --app_data_dir 参数或路径中包含 antigravity 来识别（兼容 1.x 与 2.x "Antigravity IDE"）
      */
     private isAntigravityProcess(commandLine: string): boolean {
         const lowerCmd = commandLine.toLowerCase();
-        // 检查 --app_data_dir antigravity 参数
-        if (/--app_data_dir\s+antigravity\b/i.test(commandLine)) {
+        // 检查 --app_data_dir 参数 (兼容 antigravity, antigravity-ide)
+        if (/--app_data_dir\s+["']?antigravity(-ide)?\b["']?/i.test(commandLine)) {
             return true;
         }
-        // 检查路径中是否包含 antigravity
-        if (lowerCmd.includes('/antigravity/') || lowerCmd.includes('\\antigravity\\')) {
+        // 检查路径中是否包含 antigravity (兼容 antigravity, Antigravity IDE, antigravity-ide 等)
+        if (lowerCmd.includes('antigravity')) {
             return true;
         }
         return false;
@@ -110,7 +112,7 @@ export class UnixProcessDetector implements IPlatformStrategy {
 
         const lines = stdout.trim().split('\n');
         const currentPid = process.pid;
-        const candidates: Array<{ pid: number; ppid: number; extensionPort: number; csrfToken: string }> = [];
+        const candidates: Array<{ pid: number; ppid: number; extensionPort: number; csrfToken: string; cmd: string }> = [];
 
         for (const line of lines) {
             // Format: PID PPID COMMAND...
@@ -144,7 +146,7 @@ export class UnixProcessDetector implements IPlatformStrategy {
             if (tokenMatch && tokenMatch[1] && this.isAntigravityProcess(cmd)) {
                 const extensionPort = portMatch && portMatch[1] ? parseInt(portMatch[1], 10) : 0;
                 const csrfToken = tokenMatch[1];
-                candidates.push({ pid, ppid, extensionPort, csrfToken });
+                candidates.push({ pid, ppid, extensionPort, csrfToken, cmd });
             }
         }
 
@@ -158,9 +160,24 @@ export class UnixProcessDetector implements IPlatformStrategy {
             return child;
         }
 
-        // 2. Fallback: return the first candidate found (legacy behavior)
-        // This handles cases where the process hierarchy might be different (e.g. intermediate shell)
-        return candidates[0];
+        // 2. 优先匹配当前 IDE 实例环境路径（例如当前 extension host 所在的 appRoot / 版本目录）
+        try {
+            const appRoot = vscode.env.appRoot;
+            if (appRoot) {
+                const parentDir = path.dirname(appRoot);
+                const matchAppRoot = candidates.find(c => c.cmd.includes(appRoot) || c.cmd.includes(parentDir));
+                if (matchAppRoot) {
+                    logger.info('UnixDetector', `Found matching process PID ${matchAppRoot.pid} based on appRoot`);
+                    return matchAppRoot;
+                }
+            }
+        } catch {
+            // ignore
+        }
+
+        // 3. Fallback: 优先选择 PID 最大的候选进程（通常为最新启动的实例）
+        const sorted = [...candidates].sort((a, b) => b.pid - a.pid);
+        return sorted[0];
     }
 
     /**

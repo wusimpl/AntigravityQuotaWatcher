@@ -49,11 +49,19 @@ class VersionInfoService {
         let ideVersion = 'unknown';
         let productName: string | undefined;
         try {
-            const productJsonPath = path.join(vscode.env.appRoot, 'product.json');
-            if (fs.existsSync(productJsonPath)) {
-                const productJson = JSON.parse(fs.readFileSync(productJsonPath, 'utf8'));
-                ideVersion = productJson.ideVersion || productJson.version || 'unknown';
-                productName = productJson.nameLong || productJson.applicationName || productJson.nameShort;
+            const productJsonCandidates = [
+                path.join(vscode.env.appRoot, 'product.json'),
+                path.join(vscode.env.appRoot, '..', 'product.json'),
+            ];
+            for (const productJsonPath of productJsonCandidates) {
+                if (fs.existsSync(productJsonPath)) {
+                    const productJson = JSON.parse(fs.readFileSync(productJsonPath, 'utf8'));
+                    ideVersion = productJson.ideVersion || productJson.version || 'unknown';
+                    productName = productJson.nameLong || productJson.applicationName || productJson.nameShort;
+                    if (ideVersion !== 'unknown') {
+                        break;
+                    }
+                }
             }
         } catch (e) {
             logger.warn('VersionInfo', 'Failed to read product.json:', e);

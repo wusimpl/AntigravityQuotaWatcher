@@ -501,14 +501,16 @@ export class QuotaService {
 
   private async makeGetUserStatusRequest(): Promise<any> {
     logger.debug('QuotaService', 'Using CSRF token', { csrf: this.csrfToken ? '[present]' : '[missing]' });
+    const ideVer = versionInfo.getIdeVersion();
+    const isV2 = ideVer.startsWith('2.');
     return makeRequest(
       {
         path: this.GET_USER_STATUS_PATH,
         body: {
           metadata: {
-            ideName: 'antigravity',
+            ideName: isV2 ? 'antigravity-ide' : 'antigravity',
             extensionName: 'antigravity',
-            ideVersion: versionInfo.getIdeVersion(),
+            ideVersion: ideVer,
             locale: 'en'
           }
         }
@@ -724,7 +726,7 @@ export class QuotaService {
 
     return {
       label: config.label,
-      modelId: config.modelOrAlias.model,
+      modelId: config.modelOrAlias?.model || config.modelOrAlias?.alias || config.modelId || config.label,
       remainingFraction,
       remainingPercentage: remainingFraction !== undefined ? remainingFraction * 100 : undefined,
       isExhausted: remainingFraction === undefined || remainingFraction === 0,

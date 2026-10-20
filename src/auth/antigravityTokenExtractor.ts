@@ -13,27 +13,45 @@ import { logger } from '../logger';
 let sqlInitPromise: Promise<SqlJsStatic> | null = null;
 
 /**
- * 获取 Antigravity 数据库路径
+ * 获取所有可能的 Antigravity 数据库候选路径（兼容 Antigravity 1.x 与 2.x "Antigravity IDE"）
  */
-function getAntigravityDbPath(): string {
+function getAntigravityDbCandidates(): string[] {
     const platform = os.platform();
     const home = os.homedir();
+    const candidates: string[] = [];
 
     if (platform === 'darwin') {
-        return path.join(home, 'Library/Application Support/Antigravity/User/globalStorage/state.vscdb');
+        candidates.push(
+            path.join(home, 'Library/Application Support/Antigravity IDE/User/globalStorage/state.vscdb'),
+            path.join(home, 'Library/Application Support/Antigravity/User/globalStorage/state.vscdb'),
+            path.join(home, 'Library/Application Support/com.google.antigravity-ide/User/globalStorage/state.vscdb')
+        );
     } else if (platform === 'win32') {
-        return path.join(process.env.APPDATA || '', 'Antigravity/User/globalStorage/state.vscdb');
+        const appData = process.env.APPDATA || '';
+        candidates.push(
+            path.join(appData, 'Antigravity IDE/User/globalStorage/state.vscdb'),
+            path.join(appData, 'Antigravity/User/globalStorage/state.vscdb'),
+            path.join(appData, 'antigravity-ide/User/globalStorage/state.vscdb')
+        );
     } else {
-        return path.join(home, '.config/Antigravity/User/globalStorage/state.vscdb');
+        candidates.push(
+            path.join(home, '.config/Antigravity IDE/User/globalStorage/state.vscdb'),
+            path.join(home, '.config/antigravity-ide/User/globalStorage/state.vscdb'),
+            path.join(home, '.config/Antigravity/User/globalStorage/state.vscdb'),
+            path.join(home, '.antigravity-ide-server/data/User/globalStorage/state.vscdb'),
+            path.join(home, '.antigravity-server/data/User/globalStorage/state.vscdb')
+        );
     }
+
+    return candidates;
 }
 
 /**
  * 检查 Antigravity 数据库是否存在
  */
 export function hasAntigravityDb(): boolean {
-    const dbPath = getAntigravityDbPath();
-    return fs.existsSync(dbPath);
+    const candidates = getAntigravityDbCandidates();
+    return candidates.some(p => fs.existsSync(p));
 }
 
 /**
@@ -41,57 +59,78 @@ export function hasAntigravityDb(): boolean {
  * @returns refresh_token 或 null（如果提取失败）
  */
 export async function extractRefreshTokenFromAntigravity(): Promise<string | null> {
-    try {
-        const dbPath = getAntigravityDbPath();
+    const candidates = getAntigravityDbCandidates().filter(p => fs.existsSync(p));
 
-        if (!fs.existsSync(dbPath)) {
-            logger.debug('TokenExtractor', 'Database not found:', dbPath);
-            return null;
-        }
-
-        logger.debug('TokenExtractor', 'Attempting to extract token from:', dbPath);
-
-        const dbBuffer = await fs.promises.readFile(dbPath);
-        const SQL = await getSqlInstance();
-        const db = new SQL.Database(dbBuffer);
-        const stmt = db.prepare("SELECT value FROM ItemTable WHERE key = $key");
-        stmt.bind({ $key: 'jetskiStateSync.agentManagerInitState' });
-
-        if (!stmt.step()) {
-            console.log('[AntigravityTokenExtractor] No login state found in database');
-            stmt.free();
-            db.close();
-            return null;
-        }
-
-        const row = stmt.getAsObject();
-        const base64Data = typeof row.value === 'string' ? row.value.trim() : '';
-
-        stmt.free();
-        db.close();
-
-        if (!base64Data) {
-            console.log('[AntigravityTokenExtractor] Login state empty');
-            return null;
-        }
-
-        // Base64 解码
-        const buffer = Buffer.from(base64Data, 'base64');
-
-        // 解析 Protobuf 提取 refresh_token
-        const refreshToken = parseProtobufForRefreshToken(buffer);
-
-        if (refreshToken) {
-            console.log('[AntigravityTokenExtractor] Successfully extracted refresh_token');
-        } else {
-            console.log('[AntigravityTokenExtractor] Failed to parse refresh_token from protobuf');
-        }
-
-        return refreshToken;
-    } catch (error) {
-        console.log(`[AntigravityTokenExtractor] Failed to extract refresh_token: ${error}`);
+    if (candidates.length === 0) {
+        logger.debug('TokenExtractor', 'No existing Antigravity database found among candidates');
         return null;
     }
+
+    const SQL = await getSqlInstance();
+
+    for (const dbPath of candidates) {
+        try {
+            logger.debug('TokenExtractor', 'Attempting to extract token from:', dbPath);
+            const dbBuffer = await fs.promises.readFile(dbPath);
+            const db = new SQL.Database(dbBuffer);
+
+            // 优先查找 jetskiStateSync.agentManagerInitState
+            let base64Data = '';
+            const stmt = db.prepare("SELECT value FROM ItemTable WHERE key = $key");
+            stmt.bind({ $key: 'jetskiStateSync.agentManagerInitState' });
+
+            if (stmt.step()) {
+                const row = stmt.getAsObject();
+                base64Data = typeof row.value === 'string' ? row.value.trim() : '';
+            }
+            stmt.free();
+
+            // 若未找到，模糊查找包含 agentManagerInitState、jetskiStateSync 或 oauth 的 key
+            if (!base64Data) {
+                const fallbackStmt = db.prepare(
+                    "SELECT value FROM ItemTable WHERE key LIKE '%agentManagerInitState%' OR key LIKE '%jetskiStateSync%' OR key LIKE '%OAuth%'"
+                );
+                while (fallbackStmt.step()) {
+                    const row = fallbackStmt.getAsObject();
+                    const val = typeof row.value === 'string' ? row.value.trim() : '';
+                    if (val) {
+                        try {
+                            const buf = Buffer.from(val, 'base64');
+                            const token = parseProtobufForRefreshToken(buf);
+                            if (token) {
+                                base64Data = val;
+                                break;
+                            }
+                        } catch {
+                            // continue checking
+                        }
+                    }
+                }
+                fallbackStmt.free();
+            }
+
+            db.close();
+
+            if (!base64Data) {
+                console.log(`[AntigravityTokenExtractor] Login state empty in ${dbPath}`);
+                continue;
+            }
+
+            // Base64 解码并提取 refresh_token
+            const buffer = Buffer.from(base64Data, 'base64');
+            const refreshToken = parseProtobufForRefreshToken(buffer);
+
+            if (refreshToken) {
+                console.log(`[AntigravityTokenExtractor] Successfully extracted refresh_token from ${dbPath}`);
+                return refreshToken;
+            }
+        } catch (error) {
+            console.log(`[AntigravityTokenExtractor] Failed to extract from ${dbPath}: ${error}`);
+        }
+    }
+
+    console.log('[AntigravityTokenExtractor] Failed to parse refresh_token from any database candidates');
+    return null;
 }
 
 /**

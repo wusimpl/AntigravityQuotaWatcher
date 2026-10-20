@@ -7,6 +7,8 @@
  * See safePowerShellPath.ts for details.
  */
 
+import * as vscode from 'vscode';
+import * as path from 'path';
 import { IPlatformStrategy } from './platformDetector';
 import { SafePowerShellPath } from './safePowerShellPath';
 import { logger } from './logger';
@@ -38,30 +40,31 @@ export class WindowsProcessDetector implements IPlatformStrategy {
      * Get command to list Windows processes.
      * 优先使用 wmic,如果不可用则使用 PowerShell
      */
-    getProcessListCommand(processName: string): string {
+    getProcessListCommand(_processName: string): string {
         if (this.usePowerShell) {
             // PowerShell 命令:使用 Get-CimInstance 获取进程信息并输出 JSON
             // 使用 SafePowerShellPath 获取安全的 PowerShell 路径，防止路径劫持攻击
+            // 使用 like 匹配兼容 x64 与 arm64
             const psPath = SafePowerShellPath.getSafePath();
-            return `${psPath} -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"name='${processName}'\\" | Select-Object ProcessId,CommandLine | ConvertTo-Json"`;
+            return `${psPath} -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"name like 'language_server_windows%'\\" | Select-Object ProcessId,CommandLine | ConvertTo-Json"`;
         } else {
             // WMIC 命令(传统方式)
-            return `${WindowsProcessDetector.WMIC_PATH} process where "name='${processName}'" get ProcessId,CommandLine /format:list`;
+            return `${WindowsProcessDetector.WMIC_PATH} process where "name like 'language_server_windows%'" get ProcessId,CommandLine /format:list`;
         }
     }
 
     /**
      * 判断命令行是否属于 Antigravity 进程
-     * 通过 --app_data_dir antigravity 或路径中包含 antigravity 来识别
+     * 通过 --app_data_dir 参数或路径中包含 antigravity 来识别（兼容 1.x 与 2.x "Antigravity IDE"）
      */
     private isAntigravityProcess(commandLine: string): boolean {
         const lowerCmd = commandLine.toLowerCase();
-        // 检查 --app_data_dir antigravity 参数
-        if (/--app_data_dir\s+antigravity\b/i.test(commandLine)) {
+        // 检查 --app_data_dir 参数 (兼容 antigravity, antigravity-ide)
+        if (/--app_data_dir\s+["']?antigravity(-ide)?\b["']?/i.test(commandLine)) {
             return true;
         }
-        // 检查路径中是否包含 antigravity
-        if (lowerCmd.includes('\\antigravity\\') || lowerCmd.includes('/antigravity/')) {
+        // 检查路径中是否包含 antigravity (兼容 antigravity, Antigravity IDE, antigravity-ide 等)
+        if (lowerCmd.includes('antigravity')) {
             return true;
         }
         return false;
@@ -103,10 +106,31 @@ export class WindowsProcessDetector implements IPlatformStrategy {
                         logger.info('WindowsDetector', 'No Antigravity process found, skipping non-Antigravity processes');
                         return null;
                     }
-                    if (totalCount > 1) {
-                        logger.info('WindowsDetector', `Selected Antigravity process PID: ${antigravityProcesses[0].ProcessId}`);
+                    if (antigravityProcesses.length > 1) {
+                        // 优先匹配当前 IDE appRoot 路径
+                        let matched = false;
+                        try {
+                            const appRoot = vscode.env.appRoot;
+                            if (appRoot) {
+                                const parentDir = path.dirname(appRoot);
+                                const match = antigravityProcesses.find((p: any) => p.CommandLine && (p.CommandLine.includes(appRoot) || p.CommandLine.includes(parentDir)));
+                                if (match) {
+                                    data = match;
+                                    matched = true;
+                                }
+                            }
+                        } catch {
+                            // ignore appRoot match error
+                        }
+                        if (!matched) {
+                            // 降级：选择 ProcessId 最大的进程（最新启动）
+                            const sorted = [...antigravityProcesses].sort((a: any, b: any) => (b.ProcessId || 0) - (a.ProcessId || 0));
+                            data = sorted[0];
+                        }
+                        logger.info('WindowsDetector', `Selected Antigravity process PID: ${data.ProcessId}`);
+                    } else {
+                        data = antigravityProcesses[0];
                     }
-                    data = antigravityProcesses[0];
                 } else {
                     // 单个对象时也要检查是否是 Antigravity 进程
                     if (!data.CommandLine || !this.isAntigravityProcess(data.CommandLine)) {
@@ -145,7 +169,7 @@ export class WindowsProcessDetector implements IPlatformStrategy {
         // 需要按进程分组处理，避免混淆不同进程的参数
         const blocks = stdout.split(/\n\s*\n/).filter(block => block.trim().length > 0);
 
-        const candidates: Array<{ pid: number; extensionPort: number; csrfToken: string }> = [];
+        const candidates: Array<{ pid: number; extensionPort: number; csrfToken: string; cmd: string }> = [];
 
         for (const block of blocks) {
             const pidMatch = block.match(/ProcessId=(\d+)/);
@@ -173,7 +197,7 @@ export class WindowsProcessDetector implements IPlatformStrategy {
             const extensionPort = portMatch && portMatch[1] ? parseInt(portMatch[1], 10) : 0;
             const csrfToken = tokenMatch[1];
 
-            candidates.push({ pid, extensionPort, csrfToken });
+            candidates.push({ pid, extensionPort, csrfToken, cmd: commandLine });
         }
 
         if (candidates.length === 0) {
@@ -181,8 +205,24 @@ export class WindowsProcessDetector implements IPlatformStrategy {
             return null;
         }
 
-        logger.info('WindowsDetector', `WMIC: Found ${candidates.length} Antigravity process(es), using PID: ${candidates[0].pid}`);
-        return candidates[0];
+        // 优先匹配 appRoot
+        try {
+            const appRoot = vscode.env.appRoot;
+            if (appRoot) {
+                const parentDir = path.dirname(appRoot);
+                const match = candidates.find(c => c.cmd.includes(appRoot) || c.cmd.includes(parentDir));
+                if (match) {
+                    logger.info('WindowsDetector', `WMIC: Found matching process based on appRoot, PID: ${match.pid}`);
+                    return match;
+                }
+            }
+        } catch {
+            // ignore appRoot match error
+        }
+
+        const sorted = [...candidates].sort((a, b) => b.pid - a.pid);
+        logger.info('WindowsDetector', `WMIC: Found ${candidates.length} Antigravity process(es), using PID: ${sorted[0].pid}`);
+        return sorted[0];
     }
 
     /**

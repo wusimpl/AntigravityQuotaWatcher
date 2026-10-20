@@ -93,13 +93,13 @@ export function getQuotaPool(modelName: string): QuotaPool {
 export function getPoolRepresentativeModel(pool: QuotaPool): string {
     switch (pool) {
         case 'gemini3':
-            return 'gemini-3.0-flash';  // Gemini 3.x 池子
+            return 'gemini-3.8-flash-medium';  // Gemini 3.x 池子 (兼容 3.8 与 3.0)
         case 'claude_gpt':
-            return 'claude-3-5-sonnet';
+            return 'claude-sonnet-4-6';        // Claude/GPT 池子 (兼容 4.6 与 3.5)
         case 'gemini2.5':
             return 'gemini-2.5-flash';
         default:
-            return 'gemini-2.5-flash';
+            return 'gemini-3.8-flash-medium';
     }
 }
 

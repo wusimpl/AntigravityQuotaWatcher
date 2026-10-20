@@ -179,9 +179,28 @@ export class GoogleCloudCodeClient {
             if (info.quotaInfo) {
                 // [DEBUG] 打印关键的模型配额信息
                 logger.info('GoogleAPI', `[QUOTA_DEBUG] Model "${modelName}": remaining=${info.quotaInfo.remainingFraction}, resetTime=${info.quotaInfo.resetTime}, maxTokens=${info.maxTokens || 'N/A'}`);
-                const parsed = this.parseModelQuota(modelName, info);
-                logger.debug('GoogleAPI', `fetchModelsQuota: Model "${modelName}" -> remaining: ${parsed.remainingQuota * 100}%`);
-                models.push(parsed);
+                
+                // 如果是 gemini-3.8-flash-tiered 或通用 gemini-3.8-flash，拆分为 High / Medium / Low 三档
+                if (modelName === 'gemini-3.8-flash-tiered' || modelName === 'gemini-3.8-flash') {
+                    const tiers = [
+                        { id: 'gemini-3.8-flash-high', name: 'Gemini 3.8 Flash (High)' },
+                        { id: 'gemini-3.8-flash-medium', name: 'Gemini 3.8 Flash (Medium)' },
+                        { id: 'gemini-3.8-flash-low', name: 'Gemini 3.8 Flash (Low)' },
+                    ];
+                    const baseParsed = this.parseModelQuota(modelName, info);
+                    for (const tier of tiers) {
+                        models.push({
+                            ...baseParsed,
+                            modelName: tier.id,
+                            displayName: tier.name
+                        });
+                        logger.debug('GoogleAPI', `fetchModelsQuota: Model "${tier.id}" (${tier.name}) -> remaining: ${baseParsed.remainingQuota * 100}%`);
+                    }
+                } else {
+                    const parsed = this.parseModelQuota(modelName, info);
+                    logger.debug('GoogleAPI', `fetchModelsQuota: Model "${modelName}" -> remaining: ${parsed.remainingQuota * 100}%`);
+                    models.push(parsed);
+                }
             } else {
                 logger.debug('GoogleAPI', `fetchModelsQuota: Model "${modelName}" has no quotaInfo, skipping`);
             }
@@ -225,6 +244,26 @@ export class GoogleCloudCodeClient {
      * 例如: "gemini-2.5-pro" -> "Gemini 2.5 Pro"
      */
     private formatModelDisplayName(modelName: string): string {
+        const lower = modelName.toLowerCase();
+        if (lower === 'gemini-3.8-flash-high') {
+            return 'Gemini 3.8 Flash (High)';
+        }
+        if (lower === 'gemini-3.8-flash-medium') {
+            return 'Gemini 3.8 Flash (Medium)';
+        }
+        if (lower === 'gemini-3.8-flash-low') {
+            return 'Gemini 3.8 Flash (Low)';
+        }
+        if (lower === 'claude-sonnet-4-6') {
+            return 'Claude Sonnet 4.6 (Thinking)';
+        }
+        if (lower === 'claude-opus-4-6-thinking') {
+            return 'Claude Opus 4.6 (Thinking)';
+        }
+        if (lower === 'gpt-oss-120b-medium') {
+            return 'GPT-OSS 120B (Medium)';
+        }
+
         // 先尝试修复版本号格式，将 "3-5" 这种格式转换为 "3.5"
         // 匹配模式：数字-数字 (例如 claude-3-5-sonnet -> claude-3.5-sonnet)
         const fixedModelName = modelName.replace(/(\d+)-(\d+)/g, '$1.$2');
@@ -235,6 +274,13 @@ export class GoogleCloudCodeClient {
                 // 数字部分保持原样
                 if (/^\d/.test(part)) {
                     return part;
+                }
+                const lowerPart = part.toLowerCase();
+                if (lowerPart === 'gpt') {
+                    return 'GPT';
+                }
+                if (lowerPart === 'oss') {
+                    return 'OSS';
                 }
                 // 首字母大写
                 return part.charAt(0).toUpperCase() + part.slice(1);
@@ -406,7 +452,7 @@ export class GoogleCloudCodeClient {
     }
 
     /**
-     * 检查模型版本是否支持 (过滤掉 3.0 以下的 Gemini)
+     * 检查模型版本是否支持 (过滤掉 3.8 以下以及遗留/内部实验通道的 Gemini)
      */
     private isModelVersionSupported(modelName: string): boolean {
         const lowerName = modelName.toLowerCase();
@@ -416,18 +462,25 @@ export class GoogleCloudCodeClient {
             return true;
         }
 
-        // 提取版本号 (例如 gemini-2.5-flash -> 2.5)
-        // 匹配 patterns: gemini-1.5, gemini-2.0, gemini-1.0-pro
+        // 过滤掉内部/遗留实验通道 (如 image, agent, lite, extra-low 等)
+        if (
+            lowerName.includes('image') ||
+            lowerName.includes('agent') ||
+            lowerName.includes('lite') ||
+            lowerName.includes('extra-low')
+        ) {
+            return false;
+        }
+
+        // 提取版本号 (例如 gemini-3.8-flash -> 3.8, gemini-3.5-flash -> 3.5)
         const versionMatch = lowerName.match(/gemini-(\d+(?:\.\d+)?)/);
 
         if (versionMatch && versionMatch[1]) {
             const version = parseFloat(versionMatch[1]);
-            // 只允许版本 >= 3.0
-            return version >= 3.0;
+            // 只允许 Antigravity 2.5.5+ 实际使用的 Gemini 版本 (>= 3.8)
+            return version >= 3.8;
         }
 
-        // 如果没有匹配到版本号的 Gemini (例如 gemini-pro, 通常指 1.0)，默认过滤掉
-        // 为了安全起见，如果不带版本号，假设是旧版本
         return false;
     }
 }
